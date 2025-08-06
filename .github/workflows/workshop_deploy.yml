@@ -15,8 +15,8 @@ jobs:
           ref: "noworkshop_ver"
       - uses: gmod-workshop/workshop-upload@v1
         with:
-          username: ${{ secrets.STEAM_USERNAME }}
-          vdf: ${{ secrets.STEAM_VDF }}
+          username: ${{ secrets.PEAKBOT_STEAM_USERNAME }}
+          vdf: ${{ secrets.PEAKBOT_STEAM_VDF }}
           id: ${{ secrets.ADDON_ID }}
           changelog: ${{ github.event.release.body }}
           folder: ./
