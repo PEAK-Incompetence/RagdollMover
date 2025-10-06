@@ -3347,7 +3347,6 @@ local function CManipEntry(cpanel, mode)
 	butt:SetText(Format("%s %s", language.GetPhrase("#tool.ragdollmover.resetmenu"), language.GetPhrase(modeToString[mode])))
 
 	butt.DoClick = function()
-		print(mode)
 		RGMResetCurBone(mode)
 	end
 
