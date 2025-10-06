@@ -3427,6 +3427,7 @@ local function CCol(cpanel, text, notexpanded)
 	end
 	cat:SetContents(col)
 	cat:SetExpanded(not notexpanded)
+	col:DockMargin(0, 4, 0, 0)
 	return col, cat
 end
 local function CBinder(cpanel)
