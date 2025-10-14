@@ -2632,6 +2632,13 @@ if SERVER then
 	local eyepos, eyeang = rgm.EyePosAng(pl, plviewent)
 
 	if moving then
+		-- If we're moving anything, but there isn't an entity to move in the first place,
+		-- don't continue the Think function any further
+		if not IsValid(ent) then
+			plTable.Moving = false
+			RAGDOLLMOVER.Sync(pl, "Moving")
+			return
+		end
 		if not pl:KeyDown(IN_ATTACK) or not rgmCanTool(ent, pl) then
 
 			if plTable.IsPhysBone or (physmove and plTable.NextPhysBone) then
@@ -2678,12 +2685,6 @@ if SERVER then
 
 		local apart = axis[RGMGIZMOS.GizmoTable[plTable.MoveAxis]]
 		local bone = plTable.PhysBone
-
-		if not IsValid(ent) then
-			plTable.Moving = false
-			RAGDOLLMOVER.Sync(pl, "Moving")
-			return
-		end
 
 		local tracepos = nil
 		if pl:KeyDown(IN_SPEED) then
