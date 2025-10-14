@@ -21,6 +21,7 @@ TOOL.ClientConVar["drawskeleton"] = 0
 TOOL.ClientConVar["snapenable"] = 0
 TOOL.ClientConVar["snapamount"] = 30
 TOOL.ClientConVar["drawsphere"] = 0
+TOOL.ClientConVar["resetphys"] = 1
 
 TOOL.ClientConVar["ik_leg_L"] = 0
 TOOL.ClientConVar["ik_leg_R"] = 0
@@ -1660,8 +1661,35 @@ local NETFUNC = {
 		if not IsValid(ent) then return end
 		if not rgmCanTool(ent, pl) then return end
 
-		if children then
-			RecursiveBoneFunc(bone, ent, function(bon)
+		local posLocks = (RAGDOLLMOVER[pl] and RAGDOLLMOVER[pl].rgmPosLocks and RAGDOLLMOVER[pl].rgmPosLocks[ent]) or {}
+		local angLocks = (RAGDOLLMOVER[pl] and RAGDOLLMOVER[pl].rgmPosLocks and RAGDOLLMOVER[pl].rgmAngLocks[ent]) or {}
+		local resetPhys = tobool(pl:GetInfo("ragdollmover_resetphys"))
+
+		local defaultPose = rgm.GetDefaultPhysPose(ent)
+		local function resetAll(bon)
+			local p = rgm.BoneToPhysBone(ent, bon)
+			if resetPhys and p and (not posLocks[p] or not angLocks[p]) then
+				local offset = defaultPose[p]
+				local po = ent:GetPhysicsObjectNum(p)
+				local ppos, pang
+				if offset.parent then
+					local ppo = ent:GetPhysicsObjectNum(offset.parent)
+					ppos, pang = ppo:GetPos(), ppo:GetAngles()
+				else
+					ppos, pang = ent:GetPos(), ent:GetAngles()
+				end
+				local pos, ang = LocalToWorld(offset.pos, offset.ang, ppos, pang)
+				po:EnableMotion(true)
+				po:Wake()
+				if not posLocks[p] then
+					po:SetPos(pos)
+				end
+				if not angLocks[p] and rgm.GetPhysBoneParent(ent, p) then
+					po:SetAngles(ang)
+				end
+				po:EnableMotion(false)
+				po:Wake()
+			else
 				local pos, ang, scale = ent:GetManipulateBonePosition(bon), ent:GetManipulateBoneAngles(bon), ent:GetManipulateBoneScale(bon)
 				pos:Set(vector_origin)
 				ang:Set(angle_zero)
@@ -1669,17 +1697,14 @@ local NETFUNC = {
 
 				ent:ManipulateBonePosition(bon, pos)
 				ent:ManipulateBoneAngles(bon, ang)
-				ent:ManipulateBoneScale(bon, scale)
-			end)
-		else
-			local pos, ang, scale = ent:GetManipulateBonePosition(bone), ent:GetManipulateBoneAngles(bone), ent:GetManipulateBoneScale(bone)
-			pos:Set(vector_origin)
-			ang:Set(angle_zero)
-			scale:Set(VECTOR_SCALEDEF)
+			end
+			ent:ManipulateBoneScale(bon, VECTOR_SCALEDEF)
+		end
 
-			ent:ManipulateBonePosition(bone, pos)
-			ent:ManipulateBoneAngles(bone, ang)
-			ent:ManipulateBoneScale(bone, scale)
+		if children then
+			RecursiveBoneFunc(bone, ent, resetAll)
+		else
+			resetAll(bone)
 		end
 
 		NetStarter.rgmUpdateSliders()
@@ -1699,18 +1724,40 @@ local NETFUNC = {
 		if not IsValid(ent) then return end
 		if not rgmCanTool(ent, pl) then return end
 
-		if children then
-			RecursiveBoneFunc(bone, ent, function(bon)
+		local resetPhys = tobool(pl:GetInfo("ragdollmover_resetphys"))
+		local lockTable = (RAGDOLLMOVER[pl] and RAGDOLLMOVER[pl].rgmPosLocks and RAGDOLLMOVER[pl].rgmPosLocks[ent]) or {}
+
+		local defaultPose = rgm.GetDefaultPhysPose(ent)
+		local function resetPos(bon)
+			local p = rgm.BoneToPhysBone(ent, bon)
+			if resetPhys and p and not lockTable[p] then
+				local offset = defaultPose[p]
+				local po = ent:GetPhysicsObjectNum(p)
+				local ppos, pang
+				if offset.parent then
+					local ppo = ent:GetPhysicsObjectNum(offset.parent)
+					ppos, pang = ppo:GetPos(), ppo:GetAngles()
+				else
+					ppos, pang = ent:GetPos(), ent:GetAngles()
+				end
+				local pos = LocalToWorld(offset.pos, offset.ang, ppos, pang)
+				po:EnableMotion(true)
+				po:Wake()
+				po:SetPos(pos)
+				po:EnableMotion(false)
+				po:Wake()
+			else
 				local pos = ent:GetManipulateBonePosition(bon)
 				pos:Set(vector_origin)
 
 				ent:ManipulateBonePosition(bon, pos)
-			end)
-		else
-			local pos = ent:GetManipulateBonePosition(bone)
-			pos:Set(vector_origin)
+			end
+		end
 
-			ent:ManipulateBonePosition(bone, pos)
+		if children then
+			RecursiveBoneFunc(bone, ent, resetPos)
+		else
+			resetPos(bone)
 		end
 
 		NetStarter.rgmUpdateSliders()
@@ -1729,18 +1776,42 @@ local NETFUNC = {
 
 		if not rgmCanTool(ent, pl) then return end
 
-		if children then
-			RecursiveBoneFunc(bone, ent, function(bon)
+		local lockTable = (RAGDOLLMOVER[pl] and RAGDOLLMOVER[pl].rgmPosLocks and RAGDOLLMOVER[pl].rgmAngLocks[ent]) or {}
+		local resetPhys = tobool(pl:GetInfo("ragdollmover_resetphys"))
+
+		local defaultPose = rgm.GetDefaultPhysPose(ent)
+		local function resetAng(bon)
+			local p = rgm.BoneToPhysBone(ent, bon)
+			-- Only reset angles if we are a child of a bone, i.e. we're not a root bone
+			-- Same logic applies for `rgmResetAll`
+			if resetPhys and p and not lockTable[p] and rgm.GetPhysBoneParent(ent, p) then
+				local offset = defaultPose[p]
+				local po = ent:GetPhysicsObjectNum(p)
+				local ppos, pang
+				if offset.parent then
+					local ppo = ent:GetPhysicsObjectNum(offset.parent)
+					ppos, pang = ppo:GetPos(), ppo:GetAngles()
+				else
+					ppos, pang = ent:GetPos(), ent:GetAngles()
+				end
+				local _, ang = LocalToWorld(offset.pos, offset.ang, ppos, pang)
+				po:EnableMotion(true)
+				po:Wake()
+				po:SetAngles(ang)
+				po:EnableMotion(false)
+				po:Wake()
+			else
 				local ang = ent:GetManipulateBoneAngles(bon)
 				ang:Set(angle_zero)
 
 				ent:ManipulateBoneAngles(bon, ang)
-			end)
-		else
-			local ang = ent:GetManipulateBoneAngles(bone)
-			ang:Set(angle_zero)
+			end
+		end
 
-			ent:ManipulateBoneAngles(bone, ang)
+		if children then
+			RecursiveBoneFunc(bone, ent, resetAng)
+		else
+			resetAng(bone)
 		end
 
 		NetStarter.rgmUpdateSliders()
@@ -1759,18 +1830,17 @@ local NETFUNC = {
 
 		if not rgmCanTool(ent, pl) then return end
 
-		if children then
-			RecursiveBoneFunc(bone, ent, function(bon)
-				local scale = ent:GetManipulateBoneScale(bon)
-				scale:Set(VECTOR_SCALEDEF)
-
-				ent:ManipulateBoneScale(bon, scale)
-			end)
-		else
-			local scale = ent:GetManipulateBoneScale(bone)
+		local function resetScale(bon)
+			local scale = ent:GetManipulateBoneScale(bon)
 			scale:Set(VECTOR_SCALEDEF)
 
-			ent:ManipulateBoneScale(bone, scale)
+			ent:ManipulateBoneScale(bon, scale)
+		end
+
+		if children then
+			RecursiveBoneFunc(bone, ent, resetScale)
+		else
+			resetScale(bone)
 		end
 
 		NetStarter.rgmUpdateSliders()
@@ -1789,18 +1859,17 @@ local NETFUNC = {
 
 		if not rgmCanTool(ent, pl) then return end
 
-		if children then
-			RecursiveBoneFunc(bone, ent, function(bon)
-				local scale = ent:GetManipulateBoneScale(bon)
-				scale:Set(VECTOR_NEARZERO)
-
-				ent:ManipulateBoneScale(bon, scale)
-			end)
-		else
-			local scale = ent:GetManipulateBoneScale(bone)
+		local function resetScale(bon)
+			local scale = ent:GetManipulateBoneScale(bon)
 			scale:Set(VECTOR_NEARZERO)
 
-			ent:ManipulateBoneScale(bone, scale)
+			ent:ManipulateBoneScale(bon, scale)
+		end
+
+		if children then
+			RecursiveBoneFunc(bone, ent, resetScale)
+		else
+			resetScale(bone)
 		end
 
 		NetStarter.rgmUpdateSliders()
@@ -3198,6 +3267,7 @@ local function CManipSlider(cpanel, text, mode, axis, min, max, dec, textentry)
 
 		if mode == 3 and value == 0 then value = 0.01 end
 
+		ClientBoneState:UpdateBoneScales()
 		NetStarter.rgmAdjustBone()
 			net.WriteInt(mode, 3)
 			net.WriteInt(axis, 3)
@@ -3221,6 +3291,11 @@ local function RGMResetCurBone(mode)
 	if mode == 3 then ClientBoneState:SetBoneScale(id, VECTOR_SCALEDEF) end
 	NodeFunctions[1 + mode](ent, id)
 end
+local modeToString = {
+	"tool.ragdollmover.resetpos",
+	"tool.ragdollmover.resetrot",
+	"tool.ragdollmover.resetscale",
+}
 local function CManipEntry(cpanel, mode)
 	local parent = vgui.Create("Panel", cpanel)
 	parent:SetTall(20)
@@ -3262,23 +3337,28 @@ local function CManipEntry(cpanel, mode)
 		RGMClearOffsets()
 	end
 
-	entry.SetVisible = function(self, state)
-		parent:SetVisible(state)
+	entry.Phys = false
+	entry.SetVisible = function(self, state, isPhys)
+		-- parent:SetVisible(state)
+		entry.Phys = isPhys
 	end
 
 	local butt = vgui.Create("DButton", parent)
-	butt:SetText("#tool.ragdollmover.resetmenu")
+	butt:SetText(Format("%s %s", language.GetPhrase("#tool.ragdollmover.resetmenu"), language.GetPhrase(modeToString[mode])))
 
 	butt.DoClick = function()
 		RGMResetCurBone(mode)
 	end
 
 	parent.PerformLayout = function(self)
-		entry:SetPos(0, 0)
-		entry:SetSize(parent:GetWide() *0.6, 20)
 
-		butt:SetPos(parent:GetWide() *0.6, 0)
-		butt:SetSize(parent:GetWide() *0.4, 20)
+		local buttonWidth = entry.Phys and 0 or 0.6
+		
+		entry:SetPos(0, 0)
+		entry:SetSize(parent:GetWide() * buttonWidth, 20)
+
+		butt:SetPos(parent:GetWide() * buttonWidth, 0)
+		butt:SetSize(parent:GetWide() * (1 - buttonWidth), 20)
 	end
 
 	entry.Sliders = {}
@@ -3347,6 +3427,7 @@ local function CCol(cpanel, text, notexpanded)
 	end
 	cat:SetContents(col)
 	cat:SetExpanded(not notexpanded)
+	col:DockMargin(0, 4, 0, 0)
 	return col, cat
 end
 local function CBinder(cpanel)
@@ -4783,6 +4864,8 @@ function TOOL.BuildCPanel(CPanel)
 
 		local physmovecheck = CCheckBox(Col4, "#tool.ragdollmover.physmove", "ragdollmover_physmove")
 		physmovecheck:SetToolTip("#tool.ragdollmover.physmovetip")
+		local resetphyscheck = CCheckBox(Col4, "#tool.ragdollmover.resetphys", "ragdollmover_resetphys")
+		resetphyscheck:SetToolTip("#tool.ragdollmover.resetphystip")
 		RGMMakeAngleSnap(Col4)
 		RGMMakeResetLocksPanel(Col4) 
 		
@@ -5125,11 +5208,11 @@ local NETFUNC = {
 			Pos1:SetVisible(inverted)
 			Pos2:SetVisible(inverted)
 			Pos3:SetVisible(inverted)
-			Entry1:SetVisible(inverted)
+			Entry1:SetVisible(inverted, bool)
 			Rot1:SetVisible(inverted)
 			Rot2:SetVisible(inverted)
 			Rot3:SetVisible(inverted)
-			Entry2:SetVisible(inverted)
+			Entry2:SetVisible(inverted, bool)
 		end
 
 		local isphys = net.ReadBool()
