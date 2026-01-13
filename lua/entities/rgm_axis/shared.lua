@@ -65,6 +65,7 @@ function ENT:Initialize()
 		self.Axises[i] = self[gizmoName]
 	end
 
+	self.GizmoPos, self.GizmoAng = vector_origin, angle_zero
 	if CLIENT then
 		local width = GetConVar("ragdollmover_width"):GetFloat() or 0.5
 		self.pwidth = width -- width var for each axis type, should take up less space than having width var for each gizmo part
