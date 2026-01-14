@@ -984,6 +984,35 @@ local function RecursiveBoneFunc(bone, ent, func)
 	end
 end
 
+local function UnlockBone(pl, ent, unlockbone)
+	local bone = rgm.BoneToPhysBone(ent, unlockbone)
+
+	if ent.rgmPRenttoid then
+		bone = ent.rgmPRenttoid[ent]
+	end
+	local plTable = RAGDOLLMOVER[pl]
+
+	plTable.rgmBoneLocks[ent][bone] = nil
+	rgmDupeLocks(pl, ent, getDupeData(plTable, ent), true)
+
+	NetStarter.rgmUnlockToBoneResponse()
+		net.WriteEntity(ent)
+		net.WriteUInt(unlockbone, 10)
+	net.Send(pl)
+end
+
+local function UnlockEntity(pl, ent, unlockent) -- assume entity validity checks were done before calling this
+	local plTable = RAGDOLLMOVER[pl]
+
+	plTable.rgmEntLocks[ent][unlockent] = nil
+	rgmDupeLocks(pl, ent, getDupeData(plTable, ent), true)
+
+	NetStarter.rgmLockConstrainedResponse()
+		net.WriteBool(false)
+		net.WriteUInt(1, 14)
+		net.WriteEntity(unlockent)
+	net.Send(pl)
+end
 
 local NETFUNC = {
 	function(len, pl) --			1 - rgmAskForPhysbones
@@ -1322,22 +1351,10 @@ local NETFUNC = {
 	function(len, pl) --				8 - rgmUnlockToBone
 		local ent = net.ReadEntity()
 		local unlockbone = net.ReadUInt(10)
-		local bone = rgm.BoneToPhysBone(ent, unlockbone)
 
 		if not rgmCanTool(ent, pl) then return end
 
-		if ent.rgmPRenttoid then
-			bone = ent.rgmPRenttoid[ent]
-		end
-		local plTable = RAGDOLLMOVER[pl]
-
-		plTable.rgmBoneLocks[ent][bone] = nil
-		rgmDupeLocks(pl, ent, getDupeData(plTable, ent), true)
-
-		NetStarter.rgmUnlockToBoneResponse()
-			net.WriteEntity(ent)
-			net.WriteUInt(unlockbone, 10)
-		net.Send(pl)
+		UnlockBone(pl, ent, unlockbone)
 	end,
 
 	function(len, pl) --			9 - rgmLockConstrained
@@ -1395,16 +1412,7 @@ local NETFUNC = {
 
 		if not IsValid(lockent) then return end
 		if not rgmCanTool(lockent, pl) then return end
-		local plTable = RAGDOLLMOVER[pl]
-
-		plTable.rgmEntLocks[ent][lockent] = nil
-		rgmDupeLocks(pl, ent, getDupeData(plTable, ent), true)
-
-		NetStarter.rgmLockConstrainedResponse()
-			net.WriteBool(false)
-			net.WriteUInt(1, 14)
-			net.WriteEntity(lockent)
-		net.Send(pl)
+		UnlockEntity(pl, ent, lockent)
 	end,
 
 	function(len, pl) --				11 - rgmSelectEntity
@@ -2111,11 +2119,22 @@ end)
 hook.Add("EntityRemoved", "RGMDeselectEntity", function(ent)
 	for id, pl in ipairs(player.GetAll()) do
 		local plTable = RAGDOLLMOVER[pl]
-		if plTable and plTable.Entity == ent  then
-			plTable.Entity = nil
-			plTable.Axis.EntAdvMerged = false
-			NetStarter.rgmDeselectEntity()
-			net.Send(pl)
+		if plTable  then
+			selectent = plTable.Entity
+			if selectent == ent then
+				plTable.Entity = nil
+				plTable.Axis.EntAdvMerged = false
+				NetStarter.rgmDeselectEntity()
+				net.Send(pl)
+			elseif IsValid(selectent) and plTable.rgmEntLocks[selectent][ent] then
+				UnlockEntity(pl, selectent, ent)
+
+				local physchildren = rgmGetConstrainedEntities(selectent)
+				local children = rgmFindEntityChildren(selectent)
+				plTable.PropRagdoll = selectent.rgmPRidtoent and true or false
+
+				rgmUpdateLists(pl, selectent, children, physchildren)
+			end
 		end
 	end
 end)
