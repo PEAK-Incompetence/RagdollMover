@@ -25,20 +25,20 @@ float4 main(PS_INPUT frag) : COLOR
 
     float width = WIDTHCOLOR.x;
     float centerRadius = 0.667;
-    float edgeSoftness = 0.01;
+    float edgeSoftness = 0.001;
 
     float2 p = frag.uv * 2.0 - 1.0;
     float dist = length(p);
 
-    float innerBound = centerRadius - (width * 0.01);
-    float outerBound = centerRadius + (width * 0.01);
+    float innerBound = centerRadius - (width * 0.1);
+    float outerBound = centerRadius + (width * 0.1);
 
     float mask = smoothstep(innerBound - edgeSoftness, innerBound, dist) 
                     - smoothstep(outerBound, outerBound + edgeSoftness, dist);
 
     color.a *= mask;
 
-    // if (mask <= 0.0) discard;
+    if (mask <= 0.0) discard;
 
     return color;
 }

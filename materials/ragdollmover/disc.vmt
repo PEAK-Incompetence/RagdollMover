@@ -1,7 +1,7 @@
 screenspace_general
 {
     $vertexshader "pp_vs30"
-	$pixshader "rgm_disc16_ps20b"
+	$pixshader "rgm_disc_ps20b"
 	$basetexture "_rt_WPDepth"
 	// $basetexture "color/white"
 	// $texture1 "_rt_WPDepth"
