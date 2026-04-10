@@ -688,8 +688,10 @@ end
 -------------------
 local disc = table.Copy(basepart)
 local discMaterial
+local discMaterialPartial
 if CLIENT then
 	discMaterial = Material("ragdollmover/disc")
+	discMaterialPartial = Material("ragdollmover/disc_partial")
 end
 
 do
@@ -932,15 +934,30 @@ do
 		local ANG = Angle(0, 0, 11.25)
 
 		function disc:GetLinePositions(width)
-			local unit = 1.5
-			return {
-				{
-					Vector(0, unit, unit),
-					Vector(0, -unit, unit),
-					Vector(0, -unit, -unit),
-					Vector(0, unit, -unit),
-				}
-			}
+			if not self.linepositions then
+				local unit = 1.5
+				self.linepositions = {
+					{
+						Vector(0, unit, unit),
+						Vector(0, -unit, unit),
+						Vector(0, -unit, -unit),
+						Vector(0, unit, -unit),
+					}
+				}	
+			end
+			return self.linepositions
+		end
+
+		local dummy_model = ClientsideModel("models/shadertest/vertexlit.mdl")
+		dummy_model:SetModelScale(0)	-- make it invisible
+		local function sendVertexMetadata(x, y, z)
+			render.SuppressEngineLighting(true)	
+
+			render.SetModelLighting(0, x, y, z)
+
+			dummy_model:DrawModel()
+
+			render.SuppressEngineLighting(false)
 		end
 
 		function disc:DrawLines(yellow, scale, width)
@@ -966,23 +983,24 @@ do
 
 			local moving = RAGDOLLMOVER[pl].Moving or false
 
+			local minDist, maxDist = math.huge, -math.huge
 			for i,v in ipairs(linetable) do
-				local points = self:PointsToWorld(v, scale)
-				if parent.fulldisc or (moving or
-				(points[1]:DistToSqr(eyepos) <= borderpos:DistToSqr(eyepos) and points[2]:DistToSqr(eyepos) <= borderpos:DistToSqr(eyepos) and 
-				points[3]:DistToSqr(eyepos) <= borderpos:DistToSqr(eyepos) and points[4]:DistToSqr(eyepos) <= borderpos:DistToSqr(eyepos))) then
-					table.insert(toscreen, {points})
-				end
+				toscreen = self:PointsToWorld(v, scale)
 			end
-			
-			discMaterial:SetFloat("$c0_x", width)
-			discMaterial:SetFloat("$c0_y", color.r / 255)
-			discMaterial:SetFloat("$c0_z", color.g / 255)
-			discMaterial:SetFloat("$c0_w", color.b / 255)
-			render.SetMaterial(discMaterial)
-			for i,v in ipairs(toscreen) do
-				render.DrawQuad(v[1][1], v[1][2], v[1][3], v[1][4])
+
+			for _, point in ipairs(toscreen) do
+				minDist = math.min(minDist, eyepos:Distance(point))
+				maxDist = math.max(maxDist, eyepos:Distance(point))
 			end
+
+			local mat = parent.fulldisc and discMaterial or discMaterialPartial
+			sendVertexMetadata(minDist, maxDist, 0)
+			mat:SetFloat("$c0_x", width)
+			mat:SetFloat("$c0_y", color.r / 255)
+			mat:SetFloat("$c0_z", color.g / 255)
+			mat:SetFloat("$c0_w", color.b / 255)
+			render.SetMaterial(mat)
+			render.DrawQuad(toscreen[1], toscreen[2], toscreen[3], toscreen[4])
 		end
 
 		function disc:DrawText(plTable, eyepos, eyeang)
