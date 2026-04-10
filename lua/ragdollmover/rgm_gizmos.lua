@@ -687,6 +687,10 @@ end
 -- ROTATION DISC --
 -------------------
 local disc = table.Copy(basepart)
+local discMaterial
+if CLIENT then
+	discMaterial = Material("ragdollmover/disc")
+end
 
 do
 
@@ -928,33 +932,15 @@ do
 		local ANG = Angle(0, 0, 11.25)
 
 		function disc:GetLinePositions(width)
-			local RTable = {}
-			local ang = ANG
-			local startposmin
-			local startposmax
-
-			if self.Parent.rwidth ~= width or not self.linepositions then
-				startposmin = Vector(0, 0,1 - 0.1 * width)
-				startposmax = Vector(0, 0,1 + 0.1 * width)
-
-				self.linepositions = {startposmin, startposmax}
-			else
-				startposmin = self.linepositions[1]
-				startposmax = self.linepositions[2]
-			end
-
-			for i = 1, 32 do
-				local pos1 = startposmin*1
-				local pos2 = startposmin*1
-				local pos3 = startposmax*1
-				local pos4 = startposmax*1
-				pos1:Rotate(ang * (i - 1))
-				pos2:Rotate(ang * (i))
-				pos3:Rotate(ang * (i))
-				pos4:Rotate(ang * (i - 1))
-				RTable[i] = {pos1, pos2, pos3, pos4}
-			end
-			return RTable
+			local unit = 1.5
+			return {
+				{
+					Vector(0, unit, unit),
+					Vector(0, -unit, unit),
+					Vector(0, -unit, -unit),
+					Vector(0, unit, -unit),
+				}
+			}
 		end
 
 		function disc:DrawLines(yellow, scale, width)
@@ -974,23 +960,28 @@ do
 
 			local borderpos = largedisc:GetPos()
 			local color = self:GetColor()
+			if yellow then
+				color = COLOR_BRIGHT_YELLOW
+			end
 
 			local moving = RAGDOLLMOVER[pl].Moving or false
 
 			for i,v in ipairs(linetable) do
 				local points = self:PointsToWorld(v, scale)
-				local col = color
-				if yellow then
-					col = COLOR_BRIGHT_YELLOW
-				end
 				if parent.fulldisc or (moving or
 				(points[1]:DistToSqr(eyepos) <= borderpos:DistToSqr(eyepos) and points[2]:DistToSqr(eyepos) <= borderpos:DistToSqr(eyepos) and 
 				points[3]:DistToSqr(eyepos) <= borderpos:DistToSqr(eyepos) and points[4]:DistToSqr(eyepos) <= borderpos:DistToSqr(eyepos))) then
-					table.insert(toscreen, {points, col})
+					table.insert(toscreen, {points})
 				end
 			end
+			
+			discMaterial:SetFloat("$c0_x", width)
+			discMaterial:SetFloat("$c0_y", color.r / 255)
+			discMaterial:SetFloat("$c0_z", color.g / 255)
+			discMaterial:SetFloat("$c0_w", color.b / 255)
+			render.SetMaterial(discMaterial)
 			for i,v in ipairs(toscreen) do
-				render.DrawQuad(v[1][1], v[1][2], v[1][3], v[1][4], v[2])
+				render.DrawQuad(v[1][1], v[1][2], v[1][3], v[1][4])
 			end
 		end
 
@@ -1041,17 +1032,22 @@ do
 			local toscreen = {}
 			local linetable = self:GetLinePositions(width)
 			local color = self:GetColor()
-
-			for i, v in ipairs(linetable) do
-				local col = color
-				if yellow then
-					col = COLOR_BRIGHT_YELLOW
-				end
-				local points = self:PointsToWorld(v, scale * 1.25)
-				table.insert(toscreen, {points, col})
+			if yellow then
+				color = COLOR_BRIGHT_YELLOW
 			end
+			for i, v in ipairs(linetable) do
+				local points = self:PointsToWorld(v, scale * 1.25)
+				table.insert(toscreen, {points})
+			end
+
+			discMaterial:SetFloat("$c0_x", width)
+			discMaterial:SetFloat("$c0_y", color.r / 255)
+			discMaterial:SetFloat("$c0_z", color.g / 255)
+			discMaterial:SetFloat("$c0_w", color.b / 255)
+			render.SetMaterial(discMaterial)
+
 			for i, v in ipairs(toscreen) do
-				render.DrawQuad(v[1][1], v[1][2], v[1][3], v[1][4], v[2])
+				render.DrawQuad(v[1][1], v[1][2], v[1][3], v[1][4])
 			end
 		end
 

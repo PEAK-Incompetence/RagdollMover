@@ -1,0 +1,20 @@
+screenspace_general
+{
+    $vertexshader "pp_vs30"
+	$pixshader "rgm_disc16_ps20b"
+	$basetexture "_rt_WPDepth"
+	// $basetexture "color/white"
+	// $texture1 "_rt_WPDepth"
+
+	$translucent  	1
+	$vertexalpha  	1
+	$vertexcolor  	1
+	$ignorez  		1
+    $cull 0
+	$vertextransform 		1
+
+	$c0_x 1
+	$c0_y 1
+	$c0_z 1
+	$c0_w 1
+}

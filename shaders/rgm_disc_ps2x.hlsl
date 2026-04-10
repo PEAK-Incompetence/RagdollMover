@@ -1,0 +1,44 @@
+// Defines cEyePos
+#include "common_ps_fxc.h"
+
+sampler DEPTHTEXTURE : register(s0);
+
+float4 WIDTHCOLOR : register(c0);
+
+float sampleDepth(float2 uv)
+{
+    float depth = tex2D(DEPTHTEXTURE, uv).a;
+    float z = depth * 2.0 - 1.0; // back to NDC 
+
+    // return depth;
+   return (2.0) / ((1 - z) * 4000 + 0.01);
+}
+
+struct PS_INPUT
+{
+    float2 uv : TEXCOORD0;             // Position on triangle
+};
+
+float4 main(PS_INPUT frag) : COLOR
+{
+    float4 color = float4(WIDTHCOLOR.yzw, 1);
+
+    float width = WIDTHCOLOR.x;
+    float centerRadius = 0.667;
+    float edgeSoftness = 0.01;
+
+    float2 p = frag.uv * 2.0 - 1.0;
+    float dist = length(p);
+
+    float innerBound = centerRadius - (width * 0.01);
+    float outerBound = centerRadius + (width * 0.01);
+
+    float mask = smoothstep(innerBound - edgeSoftness, innerBound, dist) 
+                    - smoothstep(outerBound, outerBound + edgeSoftness, dist);
+
+    color.a *= mask;
+
+    // if (mask <= 0.0) discard;
+
+    return color;
+}
