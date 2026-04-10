@@ -689,6 +689,7 @@ end
 local disc = table.Copy(basepart)
 local discMaterial
 local discMaterialPartial
+local ballMaterial
 if CLIENT then
 	discMaterial = Material("ragdollmover/disc")
 	discMaterialPartial = Material("ragdollmover/disc_partial")
@@ -1282,6 +1283,10 @@ do
 				color = COLOR_BRIGHT_YELLOW2
 			end
 
+			if not ballMaterial then
+				ballMaterial = Material("!rgmGizmoMaterial")
+			end
+			render.SetMaterial(ballMaterial)
 			render.DrawSphere(self:GetPos(), scale, 50, 50, color)
 		end
 	end
