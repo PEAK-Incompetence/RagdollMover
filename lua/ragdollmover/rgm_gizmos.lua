@@ -961,7 +961,6 @@ do
 		end
 
 		function disc:DrawLines(yellow, scale, width)
-			local now = SysTime()
 			local pl = LocalPlayer()
 			local parent = self.Parent
 			local toscreen = {}
@@ -1002,7 +1001,6 @@ do
 			mat:SetFloat("$c0_w", color.b / 255)
 			render.SetMaterial(mat)
 			render.DrawQuad(toscreen[1], toscreen[2], toscreen[3], toscreen[4])
-			print((SysTime() - now) * 1000, "ms")
 		end
 
 		function disc:DrawText(plTable, eyepos, eyeang)
