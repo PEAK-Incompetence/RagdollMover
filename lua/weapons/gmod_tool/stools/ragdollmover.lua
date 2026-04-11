@@ -2306,6 +2306,7 @@ function TOOL:Deploy()
 	end
 end
 
+-- KNOWN ISSUE: In Singleplayer, this is not called in CLIENT realm upon death (prediction behavior)
 function TOOL:Holster()
 	if SERVER then
 		local pl = self:GetOwner()
@@ -2314,7 +2315,10 @@ function TOOL:Holster()
 		for ent, lockeddata in pairs(plTable.rgmEntLocks) do
 			rgmDupeLocks(pl, ent, getDupeData(plTable, ent), true)
 		end
-	end
+	else
+        -- In case you were in mouse cursor mode (e.g. radial menu)
+        gui.EnableScreenClicker(false)
+    end
 end
 
 local function EntityFilter(ent, tool)
