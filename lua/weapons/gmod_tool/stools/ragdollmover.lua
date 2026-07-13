@@ -37,6 +37,8 @@ TOOL.ClientConVar["ik_chain_6"] = 0
 TOOL.ClientConVar["unfreeze"] = 0
 TOOL.ClientConVar["always_use_pl_view"] = 0
 TOOL.ClientConVar["updaterate"] = 0.01
+TOOL.ClientConVar["xray"] = 0
+TOOL.ClientConVar["xray_selection"] = 0
 
 TOOL.ClientConVar["rotatebutton"] = MOUSE_MIDDLE
 TOOL.ClientConVar["scalebutton"] = MOUSE_RIGHT
@@ -2325,6 +2327,19 @@ local function EntityFilter(ent, tool)
 	return ent:GetBrushPlaneCount() == 0 and ((ent:GetClass() == "prop_ragdoll" or ent:GetClass() == "prop_physics" or ent:GetClass() == "prop_effect") or (tool:GetClientNumber("disablefilter") ~= 0 and not ent:IsWorld()))
 end
 
+local function CanXRaySelect(tool, pl)
+	if not tool:GetClientBool("xray") then
+		return false
+	end
+	local hasAccess = true
+
+	if not game.SinglePlayer() then
+		hasAccess = rgm.CheckPrivilege(pl, "ragdollmover_xray")
+	end
+
+	return hasAccess
+end
+
 function TOOL:LeftClick()
 	local pl = self:GetOwner()
 	local plTable = RAGDOLLMOVER[pl]
@@ -2334,7 +2349,8 @@ function TOOL:LeftClick()
 	local tr = util.TraceLine({
 		start = eyepos,
 		endpos = eyepos + pl:GetAimVector() * 16384,
-		filter = { pl, pl:GetViewEntity() }
+		filter = { pl, pl:GetViewEntity() },
+		ignoreworld = CanXRaySelect(self, pl)
 	})
 
 	if op == 1 then
@@ -2880,7 +2896,8 @@ if SERVER then
 	local tr = util.TraceLine({
 		start = eyepos,
 		endpos = eyepos + pl:GetAimVector() * 16384,
-		filter = { pl, pl:GetViewEntity() }
+		filter = { pl, pl:GetViewEntity() },
+		ignoreworld = CanXRaySelect(self, pl)
 	})
 
 	if IsValid(tr.Entity) and tr.Entity:GetClass() == "prop_ragdoll" then
@@ -2939,7 +2956,7 @@ hook.Add("rgmInit", "rgmSetPlayer", function()
 end)
 
 local NodeFunctions
-local GizmoWidth, SkeletonDraw
+local GizmoWidth, SkeletonDraw, XRaySelect
 
 -- A singleton to track bone manipulate state, particularly scale. Useful if we want to use
 -- the bone manipulate state to indicate something (such as hovering over a bone in advanced bone select)
@@ -3031,6 +3048,11 @@ end)
 cvars.AddChangeCallback("ragdollmover_drawskeleton", function(convar, old, new)
 	SkeletonDraw = tonumber(new) ~= 0
 end)
+
+cvars.AddChangeCallback("ragdollmover_xray_selection", function(convar, old, new)
+	XRaySelect = tobool(new)
+end)
+
 
 cvars.AddChangeCallback("ragdollmover_fulldisc", function(convar, old, new)
 	if not pl or not RAGDOLLMOVER[pl] or not IsValid(RAGDOLLMOVER[pl].Axis) then return end
@@ -4877,6 +4899,10 @@ function TOOL.BuildCPanel(CPanel)
 		local DisFil = CCheckBox(Col3, "#tool.ragdollmover.disablefilter", "ragdollmover_disablefilter")
 		DisFil:SetToolTip("#tool.ragdollmover.disablefiltertip")
 		CCheckBox(Col3, "#tool.ragdollmover.drawskeleton", "ragdollmover_drawskeleton")
+		local XRay = CCheckBox(Col3, "#tool.ragdollmover.xray", "ragdollmover_xray")
+		XRay:SetTooltip("#tool.ragdollmover.xray.tooltip")
+		local XRaySelect = CCheckBox(Col3, "#tool.ragdollmover.xray_selection", "ragdollmover_xray_selection")
+		XRaySelect:SetTooltip("#tool.ragdollmover.xray_selection.tooltip")
 		CNumSlider(Col3, "#tool.ragdollmover.updaterate", "ragdollmover_updaterate", 0.01, 1.0, 2)
 
 	CBinder(CPanel)
@@ -5517,6 +5543,13 @@ local BoneColors = {}
 local BoneScaleGroup, LastId, LastOp = {}, 0, 0
 local LastSelectThink, LastEnt = 0, nil
 
+local TraceInput = {
+	start = vector_origin,
+	endpos = vector_origin,
+	filter = {},
+	ignoreworld = false
+}
+
 function TOOL:DrawHUD()
 
 	if not RAGDOLLMOVER[pl] then RAGDOLLMOVER[pl] = {} end
@@ -5557,12 +5590,19 @@ function TOOL:DrawHUD()
 		end
 	end
 
-	local tr = util.TraceLine({
-		start = eyepos,
-		endpos = eyepos + pl:GetAimVector() * 16384,
-		filter = { pl, pl:GetViewEntity() }
-	})
-	local aimedbone = IsValid(tr.Entity) and (tr.Entity:GetClass() == "prop_ragdoll" and plTable.AimedBone or 0) or 0
+	TraceInput.start = eyepos
+	TraceInput.endpos = eyepos + pl:GetAimVector() * 16384
+	TraceInput.filter[1] = pl 
+	TraceInput.filter[2] = pl:GetViewEntity() 
+	TraceInput.ignoreworld = CanXRaySelect(self, pl)
+	-- TODO: How do we render entities clipped underground
+	local tr = util.TraceLine(TraceInput)
+	local aimedentity = tr.Entity
+	local aimedbone = IsValid(aimedentity) and (aimedentity:GetClass() == "prop_ragdoll" and plTable.AimedBone or 0) or 0
+	if XRaySelect and IsValid(aimedentity) and aimedentity ~= ent then
+		rgm.DrawXRayEntity(aimedentity)
+	end
+
 	if nodes and IsValid(ent) and EntityFilter(ent, self) and SkeletonDraw then
 		rgm.DrawSkeleton(ent, nodes)
 	end
@@ -5584,9 +5624,9 @@ function TOOL:DrawHUD()
 		if timecheck then
 			LastSelectThink = thinktime
 		end
-	elseif IsValid(tr.Entity) and EntityFilter(tr.Entity, self) and (not bone or aimedbone ~= bone or tr.Entity ~= ent) and not moving then
-		rgm.DrawBoneConnections(tr.Entity, aimedbone)
-		rgm.DrawBoneName(tr.Entity, aimedbone)
+	elseif IsValid(aimedentity) and EntityFilter(aimedentity, self) and (not bone or aimedbone ~= bone or aimedentity ~= ent) and not moving then
+		rgm.DrawBoneConnections(aimedentity, aimedbone)
+		rgm.DrawBoneName(aimedentity, aimedbone)
 	end
 
 	if IsValid(HoveredEntBone) and EntityFilter(HoveredEntBone, self) and HoveredBone then
