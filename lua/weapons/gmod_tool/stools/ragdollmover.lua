@@ -2899,13 +2899,18 @@ if SERVER then
 		filter = { pl, pl:GetViewEntity() },
 		ignoreworld = CanXRaySelect(self, pl)
 	})
+	local aimedEntity = tr.Entity
 
-	if IsValid(tr.Entity) and tr.Entity:GetClass() == "prop_ragdoll" then
-		local b = tr.Entity:TranslatePhysBoneToBone(tr.PhysicsBone)
+	if IsValid(aimedEntity) and aimedEntity:GetClass() == "prop_ragdoll" then
+		local b = aimedEntity:TranslatePhysBoneToBone(tr.PhysicsBone)
 		if plTable.AimedBone ~= b then
 			plTable.AimedBone = b
 			RAGDOLLMOVER.Sync(pl, "AimedBone")
 		end
+	end
+	if plTable.AimedEntity ~= aimedEntity then
+		plTable.AimedEntity = aimedEntity
+		RAGDOLLMOVER.Sync(pl, "AimedEntity")
 	end
 
 	self.LastThink = CurTime()
@@ -5543,13 +5548,6 @@ local BoneColors = {}
 local BoneScaleGroup, LastId, LastOp = {}, 0, 0
 local LastSelectThink, LastEnt = 0, nil
 
-local TraceInput = {
-	start = vector_origin,
-	endpos = vector_origin,
-	filter = {},
-	ignoreworld = false
-}
-
 function TOOL:DrawHUD()
 
 	if not RAGDOLLMOVER[pl] then RAGDOLLMOVER[pl] = {} end
@@ -5590,14 +5588,7 @@ function TOOL:DrawHUD()
 		end
 	end
 
-	TraceInput.start = eyepos
-	TraceInput.endpos = eyepos + pl:GetAimVector() * 16384
-	TraceInput.filter[1] = pl 
-	TraceInput.filter[2] = pl:GetViewEntity() 
-	TraceInput.ignoreworld = CanXRaySelect(self, pl)
-	-- TODO: How do we render entities clipped underground
-	local tr = util.TraceLine(TraceInput)
-	local aimedentity = tr.Entity
+	local aimedentity = plTable.AimedEntity
 	local aimedbone = IsValid(aimedentity) and (aimedentity:GetClass() == "prop_ragdoll" and plTable.AimedBone or 0) or 0
 	if XRaySelect and IsValid(aimedentity) and aimedentity ~= ent then
 		rgm.DrawXRayEntity(aimedentity)
