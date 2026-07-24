@@ -4822,6 +4822,17 @@ local function RGMMakeAngleSnap(col)
 	col:AddItem(parentpanel)
 end
 
+local function RGMMakeXRaySelect(col)
+	CAMI.PlayerHasAccess(LocalPlayer(), "ragdollmover_xray", function(hasAccess)
+		if hasAccess then
+			local XRay = CCheckBox(col, "#tool.ragdollmover.xray", "ragdollmover_xray")
+			XRay:SetTooltip("#tool.ragdollmover.xray.tooltip")
+			local XRaySelect = CCheckBox(col, "#tool.ragdollmover.xray_selection", "ragdollmover_xray_selection")
+			XRaySelect:SetTooltip("#tool.ragdollmover.xray_selection.tooltip")
+		end
+	end)
+end
+
 local function rgmDoNotification(message)
 	if RGM_NOTIFY[message] == true then
 		notification.AddLegacy("#tool.ragdollmover.message" .. message, NOTIFY_ERROR, 5)
@@ -4904,10 +4915,7 @@ function TOOL.BuildCPanel(CPanel)
 		local DisFil = CCheckBox(Col3, "#tool.ragdollmover.disablefilter", "ragdollmover_disablefilter")
 		DisFil:SetToolTip("#tool.ragdollmover.disablefiltertip")
 		CCheckBox(Col3, "#tool.ragdollmover.drawskeleton", "ragdollmover_drawskeleton")
-		local XRay = CCheckBox(Col3, "#tool.ragdollmover.xray", "ragdollmover_xray")
-		XRay:SetTooltip("#tool.ragdollmover.xray.tooltip")
-		local XRaySelect = CCheckBox(Col3, "#tool.ragdollmover.xray_selection", "ragdollmover_xray_selection")
-		XRaySelect:SetTooltip("#tool.ragdollmover.xray_selection.tooltip")
+		RGMMakeXRaySelect(Col3)
 		CNumSlider(Col3, "#tool.ragdollmover.updaterate", "ragdollmover_updaterate", 0.01, 1.0, 2)
 
 	CBinder(CPanel)
