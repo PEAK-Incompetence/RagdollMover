@@ -25,13 +25,18 @@ local function updatePrivileges(pl)
             RAGDOLLMOVER_PRIVILEGES[pl][name] = hasAccess
         end)
     end
+
+    --- Refresh player's control panel if they have access`
+    if SERVER then return end 
+    local tool = pl:GetTool("ragdollmover")
+    if tool then
+        tool:RebuildControlPanel()
+    end
 end
 
-gameevent.Listen("player_connect")
-hook.Add("player_connect", "rgmReportPrivileges", function (data)
-    if data then
-        local pl = Player(data.userid)
-        RAGDOLLMOVER[pl] = {}
+hook.Add("SetupMove", "rgmReportPrivileges", function (pl)
+    if not RAGDOLLMOVER_PRIVILEGES[pl] then
+        RAGDOLLMOVER_PRIVILEGES[pl] = {}
         updatePrivileges(pl)
     end
 end)
