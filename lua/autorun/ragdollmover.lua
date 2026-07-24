@@ -6,6 +6,10 @@ AddCSLuaFile("ragdollmover/constants.lua")
 include("ragdollmover/rgm_gizmos.lua")
 AddCSLuaFile("ragdollmover/rgm_gizmos.lua")
 
+-- load privileges
+include("ragdollmover/privileges.lua")
+AddCSLuaFile("ragdollmover/privileges.lua")
+
 -- create font for drawing functions that scales with screen size
 local RGMFontSize
 
@@ -1657,6 +1661,15 @@ function DrawSkeleton(ent, bonenodes)
 
 end
 
+function DrawXRayEntity(ent)
+	cam.Start3D()
+	cam.IgnoreZ(true)
+	ent:DrawModel()
+	cam.IgnoreZ(false)
+
+	cam.End3D()
+end
+
 hook.Add("PopulateToolMenu", "RagdollMoverUtilities", function(form)
 	spawnmenu.AddToolMenuOption("Utilities", "Ragdoll Mover", "RGM_PatchNotes", "#ui.ragdollmover.notes", "", "", function(form)
 		---@cast form DForm
@@ -1666,4 +1679,8 @@ hook.Add("PopulateToolMenu", "RagdollMoverUtilities", function(form)
 	end)
 end)
 
+end
+
+function CheckPrivilege(pl, privilege)
+	return RAGDOLLMOVER_PRIVILEGES[pl][privilege]
 end
