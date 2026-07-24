@@ -221,6 +221,9 @@ end)
 local pl = LocalPlayer()
 
 hook.Remove("Think", "rgmClientBuffer") -- for hotloading
+-- Register "rgmInit" hook
+hook.Add("rgmInit", "rgmInit", function()
+end)
 
 hook.Add("Think", "rgmMetaCheckIfInit", function()
 	pl = LocalPlayer()
