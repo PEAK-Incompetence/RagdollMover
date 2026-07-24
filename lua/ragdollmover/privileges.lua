@@ -27,9 +27,13 @@ local function updatePrivileges(pl)
     end
 end
 
-hook.Add("PlayerConnect", "rgmReportPrivileges", function (pl)
-    RAGDOLLMOVER[pl] = {}
-    updatePrivileges(pl)
+gameevent.Listen("player_connect")
+hook.Add("player_connect", "rgmReportPrivileges", function (data)
+    if data then
+        local pl = Player(data.userid)
+        RAGDOLLMOVER[pl] = {}
+        updatePrivileges(pl)
+    end
 end)
 
 hook.Add("PlayerDisconnected", "rgmClearPrivileges", function(pl)
