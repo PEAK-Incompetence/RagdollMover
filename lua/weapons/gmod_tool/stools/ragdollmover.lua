@@ -2348,7 +2348,7 @@ function TOOL:LeftClick()
 	local op = self:GetOperation()
 	local tr = util.TraceLine({
 		start = eyepos,
-		endpos = eyepos + pl:GetAimVector() * 16384,
+		endpos = eyepos + eyeang:Forward() * 16384,
 		filter = { pl, pl:GetViewEntity() },
 		ignoreworld = CanXRaySelect(self, pl)
 	})
@@ -2576,7 +2576,7 @@ function TOOL:RightClick()
 		if SERVER then
 			local tr = util.TraceLine({
 				start = eyepos,
-				endpos = eyepos + pl:GetAimVector() * 16384,
+				endpos = eyepos + eyeang:Forward() * 16384,
 				filter = { pl, pl:GetViewEntity() }
 			})
 
@@ -2729,7 +2729,7 @@ if SERVER then
 		if pl:KeyDown(IN_SPEED) then
 			local tr = util.TraceLine({
 				start = eyepos,
-				endpos = eyepos + pl:GetAimVector() * 16384,
+				endpos = eyepos + eyeang:Forward() * 16384,
 				filter = plTable.Ignore
 			})
 			tracepos = tr.HitPos
@@ -2895,7 +2895,7 @@ if SERVER then
 
 	local tr = util.TraceLine({
 		start = eyepos,
-		endpos = eyepos + pl:GetAimVector() * 16384,
+		endpos = eyepos + eyeang:Forward() * 16384,
 		filter = { pl, pl:GetViewEntity() },
 		ignoreworld = CanXRaySelect(self, pl)
 	})

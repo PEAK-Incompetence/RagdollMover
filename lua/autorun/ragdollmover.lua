@@ -10,6 +10,10 @@ AddCSLuaFile("ragdollmover/rgm_gizmos.lua")
 include("ragdollmover/privileges.lua")
 AddCSLuaFile("ragdollmover/privileges.lua")
 
+-- load view
+include("ragdollmover/view.lua")
+AddCSLuaFile("ragdollmover/view.lua")
+
 -- create font for drawing functions that scales with screen size
 local RGMFontSize
 
@@ -71,10 +75,23 @@ end
 
 local VECTOR_ONE = RGM_Constants.VECTOR_ONE
 
+function GetEyePos(pl)
+	if SERVER then 
+		local viewTable = RAGDOLLMOVER_VIEWS[pl]
+		local inThirdPerson = viewTable and viewTable[#viewTable]
+		return 
+			inThirdPerson and viewTable[1] or pl:EyePos(),
+			inThirdPerson and viewTable[2] or pl:EyeAngles(),
+			viewTable[3]
+	else
+		return MainEyePos(), MainEyeAngles(), vgui.CursorVisible()
+	end
+end
+
 --Receives player eye position and eye angles.
 --If cursor is visible, eye angles are based on cursor position.
 function EyePosAng(pl, viewent)
-	local eyepos = pl:EyePos()
+	local eyepos, eyeang, cursorvisible = GetEyePos(pl)
 	if not viewent then viewent = pl:GetViewEntity() end
 
 	if IsValid(viewent) and viewent ~= pl then
@@ -84,15 +101,18 @@ function EyePosAng(pl, viewent)
 		end
 	end
 	local cursorvec = pl:GetAimVector():Angle()
-	local _, lookAng = WorldToLocal(vector_origin, cursorvec, vector_origin, pl:EyeAngles())
-	-- If the cursor is visible
-	if not lookAng:IsEqualTol(angle_zero, 2) then
+	if cursorvisible then
 		local cv, ca = WorldToLocal(vector_origin, cursorvec, vector_origin, pl:GetViewEntity():EyeAngles())
 		-- Rotate the cursor vector to the current view entity's eye angles
 		_, cursorvec = LocalToWorld(cv, ca, vector_origin, viewent:EyeAngles())
 	end
-	--local cursorvec = pl:EyeAngles()
-	return eyepos, cursorvec
+	local lookang = cursorvisible and cursorvec or eyeang
+	if CLIENT then
+		debugoverlay.Line(eyepos, eyepos + lookang:Forward() * 100, 0.2, RGM_Constants.COLOR_RED, true)
+	else
+		debugoverlay.Line(eyepos, eyepos + lookang:Forward() * 100, 0.2, RGM_Constants.COLOR_GREEN, true)
+	end
+	return eyepos, lookang
 end
 
 function AbsVector(vec)
