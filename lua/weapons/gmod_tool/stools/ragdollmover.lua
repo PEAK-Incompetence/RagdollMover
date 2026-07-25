@@ -2954,14 +2954,21 @@ if IsValid(pl) then
 	RAGDOLLMOVER[pl].PlViewEnt = 0
 end
 
+local GizmoWidth = GetConVar("ragdollmover_width") and GetConVar("ragdollmover_width"):GetFloat()
+local SkeletonDraw = GetConVar("ragdollmover_drawskeleton") and GetConVar("ragdollmover_drawskeleton"):GetBool()
+local XRaySelect = GetConVar("ragdollmover_xray_selection") and GetConVar("ragdollmover_xray_selection") :GetBool()
+
 hook.Add("rgmInit", "rgmSetPlayer", function()
 	pl = LocalPlayer()
 	if not RAGDOLLMOVER[pl] then RAGDOLLMOVER[pl] = {} end
 	RAGDOLLMOVER[pl].PlViewEnt = 0
+
+	GizmoWidth = GetConVar("ragdollmover_width"):GetFloat()
+	SkeletonDraw = GetConVar("ragdollmover_drawskeleton"):GetBool()
+	XRaySelect = GetConVar("ragdollmover_xray_selection") :GetBool()
 end)
 
 local NodeFunctions
-local GizmoWidth, SkeletonDraw, XRaySelect
 
 -- A singleton to track bone manipulate state, particularly scale. Useful if we want to use
 -- the bone manipulate state to indicate something (such as hovering over a bone in advanced bone select)
