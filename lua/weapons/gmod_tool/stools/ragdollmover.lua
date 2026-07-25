@@ -3589,6 +3589,8 @@ local function RGMResetGizmo()
 	net.SendToServer()
 end
 
+concommand.Add("ragdollmover_resetoffset", RGMResetGizmo, nil, "Reset the gizmo offset")
+
 local function RGMGizmoMode()
 	if not RAGDOLLMOVER[pl] then return end
 	NetStarter.rgmOperationSwitch()
