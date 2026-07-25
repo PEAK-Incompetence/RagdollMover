@@ -2294,6 +2294,11 @@ end, nil, "Reset all locks for every entity")
 
 function TOOL:Deploy()
 	if SERVER then
+		self.rgm_oldOperationState = self:GetOperation()
+		self.rgm_oldStageState = self:GetStage()
+		self:SetOperation(0)
+		self:SetStage(0)
+
 		local pl = self:GetOwner()
 		local plTable = RAGDOLLMOVER[pl]
 		local entity = plTable.Entity
@@ -2311,6 +2316,11 @@ end
 -- KNOWN ISSUE: In Singleplayer, this is not called in CLIENT realm upon death (prediction behavior)
 function TOOL:Holster()
 	if SERVER then
+		if self.rgm_oldOperationState then
+			self:SetOperation(self.rgm_oldOperationState)
+			self:SetStage(self.rgm_oldStageState)
+		end
+
 		local pl = self:GetOwner()
 		local plTable = RAGDOLLMOVER[pl]
 
