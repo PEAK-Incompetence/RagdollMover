@@ -2217,35 +2217,9 @@ hook.Add("OnCrazyPhysics", "rgmRecoverEntity", function (ent, physobj)
 		if not IsValid(selectedent) or selectedent ~= ent then
 			continue
 		end
-		local offsetTable = plTable.rgmOffsetTable
-		local dupe = duplicator.Copy(selectedent)
-		local ents = duplicator.Paste(pl, dupe.Entities, dupe.Constraints)
-
-		PrintTable(offsetTable)
-
-		for _, e in pairs(ents) do
-			for i, offset in pairs(offsetTable) do
-				if offset.ent and offset.ent == e then
-					e:SetPos(offset.pos)
-					e:SetAngles(offset.pos)
-				else
-					if e:IsRagdoll() then
-						local po = e:GetPhysicsObjectNum(i)
-						if po then
-							if offset.root then
-								po:SetPos(offset.pos)
-								po:SetAngles(offset.ang)
-							else
-								print(i, e:GetBoneName(e:TranslatePhysBoneToBone(i)), e:GetBoneName(e:TranslatePhysBoneToBone(offset.parent)))
-								local parentOffset = offsetTable[offset.parent]
-								local pos, ang = LocalToWorld(offset.pos, offset.ang, parentOffset.pos, parentOffset.ang)
-								po:SetPos(pos)
-								po:SetAngles(ang)
-							end
-						end
-					end
-				end
-			end
+		local dupe = plTable.InitialDupeState
+		if dupe then
+			duplicator.Paste(pl, dupe.Entities, dupe.Constraints)
 		end
 
 		pl:SendLua("notification.AddLegacy('Recovered entity from crazy physics!', NOTIFY_GENERIC, 5)")
@@ -2499,6 +2473,7 @@ function TOOL:LeftClick()
 			_, plTable.rgmOffsetAng = WorldToLocal(apart:GetPos(), pang, apart:GetPos(), grabang)
 		end
 
+		plTable.InitialDupeState = duplicator.Copy(ent)
 		plTable.StartAngle = WorldToLocal(collision.hitpos, angle_zero, apart:GetPos(), apart:GetAngles())
 
 		plTable.NPhysBonePos = ent:GetManipulateBonePosition(plTable.Bone)
