@@ -19,6 +19,7 @@ if CLIENT then
         net.SendToServer()
     end
     timer.Remove("rgmSendView")
+    timer.Create("rgmSendView", 0.1, 0, rgmSendView)
     hook.Add("rgmInit", "rgmSendView", function ()        
         timer.Create("rgmSendView", 0.1, 0, rgmSendView)
     end)
