@@ -2350,7 +2350,7 @@ function TOOL:LeftClick()
 		start = eyepos,
 		endpos = eyepos + eyeang:Forward() * 16384,
 		filter = { pl, pl:GetViewEntity() },
-		ignoreworld = CanXRaySelect(self, pl)
+		ignoreworld = CanXRaySelect(self, pl) and op ~= 1
 	})
 
 	if op == 1 then
