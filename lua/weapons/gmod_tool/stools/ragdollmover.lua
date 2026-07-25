@@ -2210,6 +2210,49 @@ hook.Add("EntityRemoved", "RGMDeselectEntity", function(ent)
 	end
 end)
 
+hook.Add("OnCrazyPhysics", "rgmRecoverEntity", function (ent, physobj)
+	for _, pl in ipairs(player.GetAll()) do
+		local plTable = RAGDOLLMOVER[pl]
+		local selectedent = plTable.Entity
+		if not IsValid(selectedent) or selectedent ~= ent then
+			continue
+		end
+		local offsetTable = plTable.rgmOffsetTable
+		local dupe = duplicator.Copy(selectedent)
+		local ents = duplicator.Paste(pl, dupe.Entities, dupe.Constraints)
+
+		PrintTable(offsetTable)
+
+		for _, e in pairs(ents) do
+			for i, offset in pairs(offsetTable) do
+				if offset.ent and offset.ent == e then
+					e:SetPos(offset.pos)
+					e:SetAngles(offset.pos)
+				else
+					if e:IsRagdoll() then
+						local po = e:GetPhysicsObjectNum(i)
+						if po then
+							if offset.root then
+								po:SetPos(offset.pos)
+								po:SetAngles(offset.ang)
+							else
+								print(i, e:GetBoneName(e:TranslatePhysBoneToBone(i)), e:GetBoneName(e:TranslatePhysBoneToBone(offset.parent)))
+								local parentOffset = offsetTable[offset.parent]
+								local pos, ang = LocalToWorld(offset.pos, offset.ang, parentOffset.pos, parentOffset.ang)
+								po:SetPos(pos)
+								po:SetAngles(ang)
+							end
+						end
+					end
+				end
+			end
+		end
+
+		pl:SendLua("notification.AddLegacy('Recovered entity from crazy physics!', NOTIFY_GENERIC, 5)")
+		return
+	end
+end)
+
 end
 
 concommand.Add("ragdollmover_resetroot", function(pl)
