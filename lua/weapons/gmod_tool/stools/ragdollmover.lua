@@ -149,6 +149,37 @@ local function rgmCanTool(ent, pl)
 	return cantool
 end
 
+local WORLD_MINS, WORLD_MAXS
+
+-- Check if the position of the entity is beyond the map limits
+-- if so, 
+local function rgmValidatePosition(obj)
+	if not WORLD_MINS then
+		WORLD_MINS, WORLD_MAXS = game.GetWorld():GetModelBounds()
+	end
+	local objPos = obj:GetPos()
+	for i = 1, 3 do
+		local minTest = WORLD_MINS[i]
+		local maxTest = WORLD_MAXS[i]
+		if objPos[i] < minTest then
+			objPos[i] = minTest
+			obj:SetPos(objPos)
+		elseif objPos[i] > maxTest then
+			objPos[i] = maxTest
+			obj:SetPos(objPos)	 
+		end
+	end
+end
+
+-- Use a helper SetPos function to both set positions and validate it
+-- To prevent ourselves from moving it beyond the map boundary
+local function rgmSetPos(objOrEntity, pos)
+	if objOrEntity.SetPos then
+		objOrEntity:SetPos(pos)
+		rgmValidatePosition(objOrEntity)
+	end
+end
+
 local function rgmFindEntityChildren(parent)
 	local children = {}
 
@@ -289,7 +320,7 @@ local function rgmDoScale(pl, ent, axis, childbones, bone, sc, prevscale, physmo
 							local obj = ent:GetPhysicsObjectNum(plTable.GizmoParentID)
 							obj:EnableMotion(true)
 							obj:Wake()
-							obj:SetPos(obj:GetPos() + newpos)
+							rgmSetPos(obj, obj:GetPos() + newpos)
 							obj:EnableMotion(false)
 							obj:Wake()
 
@@ -522,7 +553,7 @@ local function rgmDoScale(pl, ent, axis, childbones, bone, sc, prevscale, physmo
 
 				obj:EnableMotion(true)
 				obj:Wake()
-				obj:SetPos(postable[i].pos)
+				rgmSetPos(obj, postable[i].pos)
 				obj:SetAngles(postable[i].ang)
 				obj:EnableMotion(false)
 				obj:Wake()
@@ -536,7 +567,7 @@ local function rgmDoScale(pl, ent, axis, childbones, bone, sc, prevscale, physmo
 
 							obj:EnableMotion(true)
 							obj:Wake()
-							obj:SetPos(bones[j].pos)
+							rgmSetPos(obj, bones[j].pos)
 							obj:SetAngles(bones[j].ang)
 							obj:EnableMotion(false)
 							obj:Wake()
@@ -1692,7 +1723,7 @@ local NETFUNC = {
 				po:EnableMotion(true)
 				po:Wake()
 				if not posLocks[p] then
-					po:SetPos(pos)
+					rgmSetPos(po, pos)
 				end
 				if not angLocks[p] and rgm.GetPhysBoneParent(ent, p) then
 					po:SetAngles(ang)
@@ -1753,7 +1784,7 @@ local NETFUNC = {
 				local pos = LocalToWorld(offset.pos, offset.ang, ppos, pang)
 				po:EnableMotion(true)
 				po:Wake()
-				po:SetPos(pos)
+				rgmSetPos(po, pos)
 				po:EnableMotion(false)
 				po:Wake()
 			else
@@ -2014,7 +2045,7 @@ local NETFUNC = {
 
 						obj:EnableMotion(true)
 						obj:Wake()
-						obj:SetPos(postable[i].pos)
+						rgmSetPos(obj, postable[i].pos)
 						obj:SetAngles(postable[i].ang)
 						obj:EnableMotion(false)
 						obj:Wake()
@@ -2028,7 +2059,7 @@ local NETFUNC = {
 
 									obj:EnableMotion(true)
 									obj:Wake()
-									obj:SetPos(bones[j].pos)
+									rgmSetPos(obj, bones[j].pos)
 									obj:SetAngles(bones[j].ang)
 									obj:EnableMotion(false)
 									obj:Wake()
@@ -2070,7 +2101,7 @@ local NETFUNC = {
 
 						obj:EnableMotion(true)
 						obj:Wake()
-						obj:SetPos(postable[i].pos)
+						rgmSetPos(obj, postable[i].pos)
 						obj:SetAngles(postable[i].ang)
 						obj:EnableMotion(false)
 						obj:Wake()
@@ -2084,7 +2115,7 @@ local NETFUNC = {
 
 									obj:EnableMotion(true)
 									obj:Wake()
-									obj:SetPos(bones[j].pos)
+									rgmSetPos(obj, bones[j].pos)
 									obj:SetAngles(bones[j].ang)
 									obj:EnableMotion(false)
 									obj:Wake()
@@ -2791,7 +2822,7 @@ if SERVER then
 				if not isik or iknum == 3 or (rotate and (iknum == 1 or iknum == 2)) then
 					obj:EnableMotion(true)
 					obj:Wake()
-					obj:SetPos(pos)
+					rgmSetPos(obj, pos)
 					obj:SetAngles(ang)
 					obj:EnableMotion(false)
 					obj:Wake()
@@ -2831,7 +2862,7 @@ if SERVER then
 
 						obj:EnableMotion(true)
 						obj:Wake()
-						obj:SetPos(postable[i].pos)
+						rgmSetPos(obj, postable[i].pos)
 						obj:SetAngles(postable[i].ang)
 						obj:EnableMotion(false)
 						obj:Wake()
@@ -2845,7 +2876,7 @@ if SERVER then
 
 									obj:EnableMotion(true)
 									obj:Wake()
-									obj:SetPos(bones[j].pos)
+									rgmSetPos(obj, bones[j].pos)
 									obj:SetAngles(bones[j].ang)
 									obj:EnableMotion(false)
 									obj:Wake()
@@ -2882,7 +2913,7 @@ if SERVER then
 
 							obj:EnableMotion(true)
 							obj:Wake()
-							obj:SetPos(postable[i].pos)
+							rgmSetPos(obj, postable[i].pos)
 							obj:SetAngles(postable[i].ang)
 							obj:EnableMotion(false)
 							obj:Wake()
@@ -2896,7 +2927,7 @@ if SERVER then
 
 										obj:EnableMotion(true)
 										obj:Wake()
-										obj:SetPos(bones[j].pos)
+										rgmSetPos(obj, bones[j].pos)
 										obj:SetAngles(bones[j].ang)
 										obj:EnableMotion(false)
 										obj:Wake()
