@@ -151,32 +151,54 @@ end
 
 local WORLD_MINS, WORLD_MAXS
 
+local function setPosFromOffset(obj, offsetTable)
+	local p = obj:GetIndex()
+	local walk = offsetTable[p]
+	local pos, ang = walk.pos, walk.ang
+	repeat
+		walk = offsetTable[walk.parent]
+		if walk then
+			pos, ang = LocalToWorld(pos, ang, walk.pos, walk.ang)
+		end
+	until not walk
+	obj:SetPos(pos)
+	obj:SetAngles(ang)
+end
+
 -- Check if the position of the entity is beyond the map limits
 -- if so, 
-local function rgmValidatePosition(obj)
+local function rgmValidatePosition(obj, offsetTable)
 	if not WORLD_MINS then
 		WORLD_MINS, WORLD_MAXS = game.GetWorld():GetModelBounds()
 	end
 	local objPos = obj:GetPos()
+	local set = false
 	for i = 1, 3 do
 		local minTest = WORLD_MINS[i]
 		local maxTest = WORLD_MAXS[i]
 		if objPos[i] < minTest then
+			set = true
 			objPos[i] = minTest
-			obj:SetPos(objPos)
 		elseif objPos[i] > maxTest then
+			set = true
 			objPos[i] = maxTest
-			obj:SetPos(objPos)	 
+		end
+	end
+	if set then
+		if offsetTable then
+			setPosFromOffset(obj, offsetTable)
+		else
+			obj:SetPos(objPos)
 		end
 	end
 end
 
 -- Use a helper SetPos function to both set positions and validate it
 -- To prevent ourselves from moving it beyond the map boundary
-local function rgmSetPos(objOrEntity, pos)
+local function rgmSetPos(objOrEntity, pos, plTable)
 	if objOrEntity.SetPos then
 		objOrEntity:SetPos(pos)
-		rgmValidatePosition(objOrEntity)
+		rgmValidatePosition(objOrEntity, plTable and plTable.rgmOffsetTable)
 	end
 end
 
@@ -2822,7 +2844,7 @@ if SERVER then
 				if not isik or iknum == 3 or (rotate and (iknum == 1 or iknum == 2)) then
 					obj:EnableMotion(true)
 					obj:Wake()
-					rgmSetPos(obj, pos)
+					rgmSetPos(obj, pos, plTable)
 					obj:SetAngles(ang)
 					obj:EnableMotion(false)
 					obj:Wake()
