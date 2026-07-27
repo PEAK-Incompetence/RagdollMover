@@ -2748,7 +2748,6 @@ if SERVER then
 	local physmove = plTable.physmove ~= 0
 	local plviewent = plTable.always_use_pl_view == 1 and pl or (plTable.PlViewEnt ~= 0 and Entity(plTable.PlViewEnt) or nil)
 
-	print(plTable.FirstView)
 	local eyepos, eyeang = rgm.EyePosAng(pl, plTable.FirstView)
 
 	if moving then
