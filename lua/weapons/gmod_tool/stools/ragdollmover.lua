@@ -2430,6 +2430,8 @@ function TOOL:LeftClick()
 		ignoreworld = CanXRaySelect(self, pl) and op ~= 1
 	})
 
+	plTable.FirstView = pl:GetViewEntity()
+
 	if op == 1 then
 
 		if SERVER then
@@ -2746,7 +2748,8 @@ if SERVER then
 	local physmove = plTable.physmove ~= 0
 	local plviewent = plTable.always_use_pl_view == 1 and pl or (plTable.PlViewEnt ~= 0 and Entity(plTable.PlViewEnt) or nil)
 
-	local eyepos, eyeang = rgm.EyePosAng(pl, plviewent)
+	print(plTable.FirstView)
+	local eyepos, eyeang = rgm.EyePosAng(pl, plTable.FirstView)
 
 	if moving then
 		-- If we're moving anything, but there isn't an entity to move in the first place,

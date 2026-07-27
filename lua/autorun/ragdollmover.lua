@@ -79,9 +79,10 @@ function GetEyePos(pl)
 	if SERVER then 
 		local viewTable = RAGDOLLMOVER_VIEWS[pl]
 		local inThirdPerson = viewTable and viewTable[#viewTable]
+		local inViewEnt = pl ~= pl:GetViewEntity()
 		return 
-			inThirdPerson and viewTable[1] or pl:EyePos(),
-			inThirdPerson and viewTable[2] or pl:EyeAngles(),
+			not inViewEnt and inThirdPerson and viewTable[1] or pl:EyePos(),
+			not inViewEnt and inThirdPerson and viewTable[2] or pl:EyeAngles(),
 			viewTable[3]
 	else
 		return MainEyePos(), MainEyeAngles(), vgui.CursorVisible()
@@ -102,8 +103,8 @@ function EyePosAng(pl, viewent)
 	end
 	local cursorvec = pl:GetAimVector():Angle()
 	if cursorvisible then
-		local cv, ca = WorldToLocal(vector_origin, cursorvec, vector_origin, pl:GetViewEntity():EyeAngles())
-		-- Rotate the cursor vector to the current view entity's eye angles
+		local cv, ca = WorldToLocal(vector_origin, cursorvec, vector_origin, viewent:EyeAngles())
+		-- Rotate the cursor vector to the current view entity's eye angles 
 		_, cursorvec = LocalToWorld(cv, ca, vector_origin, viewent:EyeAngles())
 	end
 	local lookang = cursorvisible and cursorvec or eyeang
