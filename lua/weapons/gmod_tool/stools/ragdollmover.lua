@@ -149,7 +149,7 @@ local function rgmCanTool(ent, pl)
 	return cantool
 end
 
-local WORLD_MINS, WORLD_MAXS
+local WORLD_MINS, WORLD_MAXS = VECTOR_SCALEDEF * -16384, VECTOR_SCALEDEF * 16384
 
 local function setPosFromOffset(obj, offsetTable)
 	local p = obj:GetIndex()
@@ -168,9 +168,6 @@ end
 -- Check if the position of the entity is beyond the map limits
 -- if so, 
 local function rgmValidatePosition(obj, offsetTable)
-	if not WORLD_MINS then
-		WORLD_MINS, WORLD_MAXS = game.GetWorld():GetModelBounds()
-	end
 	local objPos = obj:GetPos()
 	local set = false
 	for i = 1, 3 do
