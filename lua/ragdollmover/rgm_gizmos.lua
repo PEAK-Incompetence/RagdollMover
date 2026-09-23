@@ -691,8 +691,10 @@ local discMaterial
 local discMaterialPartial
 local ballMaterial
 if CLIENT then
-	discMaterial = Material("ragdollmover/disc")
-	discMaterialPartial = Material("ragdollmover/disc_partial")
+	local dxlevel = render.GetDXLevel()
+	local dx11 = dxlevel >= 110 and dxlevel <= 114
+	discMaterial = Material(dx11 and "ragdollmover/disc_dx11" or "ragdollmover/disc")
+	discMaterialPartial = Material("ragdollmover/disc_partial_dx11" or "ragdollmover/disc")
 end
 
 do
