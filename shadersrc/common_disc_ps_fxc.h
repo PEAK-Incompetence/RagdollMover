@@ -1,10 +1,14 @@
-// Defines cEyePos
 #include "common_ps_fxc.h"
 
 float4 WIDTHCOLOR : register(c0);
 
 struct PS_INPUT
 {
+    #if defined(DX11)
+    float4 P            : SV_Position;
+    #else
+    float2 P            : VPOS;
+    #endif
     float2 uv : TEXCOORD0;             // Position on triangle
     float depth : TEXCOORD1;
 };

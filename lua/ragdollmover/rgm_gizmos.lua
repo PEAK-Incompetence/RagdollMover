@@ -693,8 +693,9 @@ local ballMaterial
 if CLIENT then
 	local dxlevel = render.GetDXLevel()
 	local dx11 = dxlevel >= 110 and dxlevel <= 114
+	-- DX11 uses Shader Model 5.0, so we need to resort to a different material to allow discs to render
 	discMaterial = Material(dx11 and "ragdollmover/disc_dx11" or "ragdollmover/disc")
-	discMaterialPartial = Material("ragdollmover/disc_partial_dx11" or "ragdollmover/disc")
+	discMaterialPartial = Material(dx11 and "ragdollmover/disc_partial_dx11" or "ragdollmover/disc")
 end
 
 do
@@ -1046,6 +1047,8 @@ do
 
 	if CLIENT then
 
+		local dxlevel = render.GetDXLevel()
+		local dx11 = dxlevel >= 110 and dxlevel <= 114
 		function disclarge:DrawLines(yellow, scale, width)
 			local toscreen = {}
 			local linetable = self:GetLinePositions(width)
@@ -1062,6 +1065,12 @@ do
 			discMaterial:SetFloat("$c0_y", color.r / 255)
 			discMaterial:SetFloat("$c0_z", color.g / 255)
 			discMaterial:SetFloat("$c0_w", color.b / 255)
+			if dx11 then
+				-- HACK: For some reason, materials from most recent draw (the blue disc), carries
+				-- over to this one. Resetting the context here fixes it  
+				cam.End3D()
+				cam.Start3D()
+			end
 			render.SetMaterial(discMaterial)
 
 			for i, v in ipairs(toscreen) do
