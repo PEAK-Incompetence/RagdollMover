@@ -1,21 +1,14 @@
-// Defines cEyePos
 #include "common_ps_fxc.h"
-
-sampler DEPTHTEXTURE : register(s0);
 
 float4 WIDTHCOLOR : register(c0);
 
-float sampleDepth(float2 uv)
-{
-    float depth = tex2D(DEPTHTEXTURE, uv).a;
-    float z = depth * 2.0 - 1.0; // back to NDC 
-
-    // return depth;
-   return (2.0) / ((1 - z) * 4000 + 0.01);
-}
-
 struct PS_INPUT
 {
+    #if defined(DX11)
+    float4 P            : SV_Position;
+    #else
+    float2 P            : VPOS;
+    #endif
     float2 uv : TEXCOORD0;             // Position on triangle
     float depth : TEXCOORD1;
 };
@@ -25,7 +18,11 @@ float bias(float t, float b) {
     return t / ((((1.0/b) - 2.0) * (1.0 - t)) + 1.0);
 }
 
-float4 main(PS_INPUT frag) : COLOR
+#if defined(DX11)
+float4 main( PS_INPUT frag ) : SV_Target
+#else
+float4 main( PS_INPUT frag ) : COLOR
+#endif
 {
     float4 color = float4(WIDTHCOLOR.yzw, 1);
 
