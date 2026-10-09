@@ -1061,16 +1061,13 @@ do
 				table.insert(toscreen, {points})
 			end
 
+			-- For DX11, some material changes (disc coloring) don't immediately carry over
+			-- unless there's a projected texture rendering. Remove this comment if the
+			-- behavior is gone
 			discMaterial:SetFloat("$c0_x", width)
 			discMaterial:SetFloat("$c0_y", color.r / 255)
 			discMaterial:SetFloat("$c0_z", color.g / 255)
 			discMaterial:SetFloat("$c0_w", color.b / 255)
-			if dx11 then
-				-- HACK: For some reason, materials from most recent draw (the blue disc), carries
-				-- over to this one. Resetting the context here fixes it  
-				cam.End3D()
-				cam.Start3D()
-			end
 			render.SetMaterial(discMaterial)
 
 			for i, v in ipairs(toscreen) do
