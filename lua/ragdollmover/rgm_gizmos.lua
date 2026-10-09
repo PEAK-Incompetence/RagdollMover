@@ -691,8 +691,11 @@ local discMaterial
 local discMaterialPartial
 local ballMaterial
 if CLIENT then
-	discMaterial = Material("ragdollmover/disc")
-	discMaterialPartial = Material("ragdollmover/disc_partial")
+	local dxlevel = render.GetDXLevel()
+	local dx11 = dxlevel >= 110 and dxlevel <= 114
+	-- DX11 uses Shader Model 5.0, so we need to resort to a different material to allow discs to render
+	discMaterial = Material(dx11 and "ragdollmover/disc_dx11" or "ragdollmover/disc")
+	discMaterialPartial = Material(dx11 and "ragdollmover/disc_partial_dx11" or "ragdollmover/disc")
 end
 
 do
@@ -1044,6 +1047,8 @@ do
 
 	if CLIENT then
 
+		local dxlevel = render.GetDXLevel()
+		local dx11 = dxlevel >= 110 and dxlevel <= 114
 		function disclarge:DrawLines(yellow, scale, width)
 			local toscreen = {}
 			local linetable = self:GetLinePositions(width)
@@ -1056,6 +1061,9 @@ do
 				table.insert(toscreen, {points})
 			end
 
+			-- For DX11, some material changes (disc coloring) don't immediately carry over
+			-- unless there's a projected texture rendering. Remove this comment if the
+			-- behavior is gone
 			discMaterial:SetFloat("$c0_x", width)
 			discMaterial:SetFloat("$c0_y", color.r / 255)
 			discMaterial:SetFloat("$c0_z", color.g / 255)

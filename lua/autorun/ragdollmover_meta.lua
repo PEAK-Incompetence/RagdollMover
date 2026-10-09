@@ -105,7 +105,7 @@ function RAGDOLLMOVER.Sync(pl, ...)
 		local val = RAGDOLLMOVER[pl][v]
 
 		local Type = string.lower(type(val))
-		if Type == "entity" or Type == "vehicle" then
+		if Type == "entity" or Type == "vehicle" or Type == "npc" then
 			net.WriteUInt(TYPE_ENTITY, 3)
 			net.WriteUInt(val:EntIndex(), MAX_EDICT_BITS)
 		elseif Type == "number" then
