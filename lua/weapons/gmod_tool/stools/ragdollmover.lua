@@ -5718,6 +5718,11 @@ function TOOL:DrawHUD()
 	local viewvec = IsValid(plviewent) and plviewent:GetForward() or pl:GetViewEntity():GetForward()
 	local fov = pl:GetFOV()
 
+		if XRaySelect and IsValid(ent) then
+			rgm.DrawXRayEntity(ent)
+		end
+
+
 	if not (self:GetOperation() == 2) and IsValid(ent) and IsValid(axis) and bone then
 		local width = GizmoWidth or 0.5
 		local moveaxis = axis[RGMGIZMOS.GizmoTable[plTable.MoveAxis]]
