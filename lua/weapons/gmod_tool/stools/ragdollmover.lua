@@ -1753,7 +1753,7 @@ local NETFUNC = {
 		local function resetAll(bon)
 			local p = rgm.BoneToPhysBone(ent, bon)
 			if resetPhys and p and (not posLocks[p] or not angLocks[p]) then
-
+				local defaultOffset = defaultPose[p]
 				local po = ent:GetPhysicsObjectNum(p)
 				local ppos, pang
 				if defaultOffset.parent then
