@@ -1749,11 +1749,11 @@ local NETFUNC = {
 		local angLocks = (RAGDOLLMOVER[pl] and RAGDOLLMOVER[pl].rgmPosLocks and RAGDOLLMOVER[pl].rgmAngLocks[ent]) or {}
 		local resetPhys = tobool(pl:GetInfo("ragdollmover_resetphys"))
 
-		local defaultPose, offsetPose = rgm.GetDefaultPhysPose(ent)
+		local parentOffset, boneOffset = rgm.GetDefaultPhysPose(ent)
 		local function resetAll(bon)
 			local p = rgm.BoneToPhysBone(ent, bon)
 			if resetPhys and p and (not posLocks[p] or not angLocks[p]) then
-				local defaultOffset = defaultPose[p]
+				local defaultOffset = parentOffset[p]
 				local po = ent:GetPhysicsObjectNum(p)
 				local ppos, pang
 				if defaultOffset.parent then
@@ -1763,7 +1763,7 @@ local NETFUNC = {
 					ppos, pang = ent:GetPos(), ent:GetAngles()
 				end
 
-				rgm.Unstretch(ent, p, defaultPose, offsetPose)
+				rgm.Unstretch(ent, p, parentOffset, boneOffset)
 				local pos, ang = LocalToWorld(defaultOffset.pos, defaultOffset.ang, ppos, pang)
 				po:EnableMotion(true)
 				po:Wake()
@@ -1813,11 +1813,26 @@ local NETFUNC = {
 		local resetPhys = tobool(pl:GetInfo("ragdollmover_resetphys"))
 		local lockTable = (RAGDOLLMOVER[pl] and RAGDOLLMOVER[pl].rgmPosLocks and RAGDOLLMOVER[pl].rgmPosLocks[ent]) or {}
 
-		local defaultPose, offsetPose = rgm.GetDefaultPhysPose(ent)
+		local parentOffset, boneOffset = rgm.GetDefaultPhysPose(ent)
 		local function resetPos(bon)
 			local p = rgm.BoneToPhysBone(ent, bon)
 			if resetPhys and p and not lockTable[p] then
-				rgm.Unstretch(ent, p, defaultPose, offsetPose)
+				local defaultOffset = parentOffset[p]
+				local po = ent:GetPhysicsObjectNum(p)
+				local ppos, pang
+				if defaultOffset.parent then
+					local ppo = ent:GetPhysicsObjectNum(defaultOffset.parent)
+					ppos, pang = ppo:GetPos(), ppo:GetAngles()
+				else
+					ppos, pang = ent:GetPos(), ent:GetAngles()
+				end
+				rgm.Unstretch(ent, p, parentOffset, boneOffset)
+				local pos, ang = LocalToWorld(defaultOffset.pos, defaultOffset.ang, ppos, pang)
+				po:EnableMotion(true)
+				po:Wake()
+				rgmSetPos(po, pos)
+				po:EnableMotion(false)
+				po:Wake()
 			else
 				local pos = ent:GetManipulateBonePosition(bon)
 				pos:Set(vector_origin)
