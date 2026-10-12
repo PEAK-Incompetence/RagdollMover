@@ -1749,20 +1749,22 @@ local NETFUNC = {
 		local angLocks = (RAGDOLLMOVER[pl] and RAGDOLLMOVER[pl].rgmPosLocks and RAGDOLLMOVER[pl].rgmAngLocks[ent]) or {}
 		local resetPhys = tobool(pl:GetInfo("ragdollmover_resetphys"))
 
-		local defaultPose = rgm.GetDefaultPhysPose(ent)
+		local defaultPose, offsetPose = rgm.GetDefaultPhysPose(ent)
 		local function resetAll(bon)
 			local p = rgm.BoneToPhysBone(ent, bon)
 			if resetPhys and p and (not posLocks[p] or not angLocks[p]) then
-				local offset = defaultPose[p]
+
 				local po = ent:GetPhysicsObjectNum(p)
 				local ppos, pang
-				if offset.parent then
-					local ppo = ent:GetPhysicsObjectNum(offset.parent)
+				if defaultOffset.parent then
+					local ppo = ent:GetPhysicsObjectNum(defaultOffset.parent)
 					ppos, pang = ppo:GetPos(), ppo:GetAngles()
 				else
 					ppos, pang = ent:GetPos(), ent:GetAngles()
 				end
-				local pos, ang = LocalToWorld(offset.pos, offset.ang, ppos, pang)
+
+				rgm.Unstretch(ent, p, defaultPose, offsetPose)
+				local pos, ang = LocalToWorld(defaultOffset.pos, defaultOffset.ang, ppos, pang)
 				po:EnableMotion(true)
 				po:Wake()
 				if not posLocks[p] then
@@ -1811,25 +1813,11 @@ local NETFUNC = {
 		local resetPhys = tobool(pl:GetInfo("ragdollmover_resetphys"))
 		local lockTable = (RAGDOLLMOVER[pl] and RAGDOLLMOVER[pl].rgmPosLocks and RAGDOLLMOVER[pl].rgmPosLocks[ent]) or {}
 
-		local defaultPose = rgm.GetDefaultPhysPose(ent)
+		local defaultPose, offsetPose = rgm.GetDefaultPhysPose(ent)
 		local function resetPos(bon)
 			local p = rgm.BoneToPhysBone(ent, bon)
 			if resetPhys and p and not lockTable[p] then
-				local offset = defaultPose[p]
-				local po = ent:GetPhysicsObjectNum(p)
-				local ppos, pang
-				if offset.parent then
-					local ppo = ent:GetPhysicsObjectNum(offset.parent)
-					ppos, pang = ppo:GetPos(), ppo:GetAngles()
-				else
-					ppos, pang = ent:GetPos(), ent:GetAngles()
-				end
-				local pos = LocalToWorld(offset.pos, offset.ang, ppos, pang)
-				po:EnableMotion(true)
-				po:Wake()
-				rgmSetPos(po, pos)
-				po:EnableMotion(false)
-				po:Wake()
+				rgm.Unstretch(ent, p, defaultPose, offsetPose)
 			else
 				local pos = ent:GetManipulateBonePosition(bon)
 				pos:Set(vector_origin)
@@ -1863,13 +1851,13 @@ local NETFUNC = {
 		local lockTable = (RAGDOLLMOVER[pl] and RAGDOLLMOVER[pl].rgmPosLocks and RAGDOLLMOVER[pl].rgmAngLocks[ent]) or {}
 		local resetPhys = tobool(pl:GetInfo("ragdollmover_resetphys"))
 
-		local defaultPose = rgm.GetDefaultPhysPose(ent)
+		local parentOffset, boneOffset = rgm.GetDefaultPhysPose(ent)
 		local function resetAng(bon)
 			local p = rgm.BoneToPhysBone(ent, bon)
 			-- Only reset angles if we are a child of a bone, i.e. we're not a root bone
 			-- Same logic applies for `rgmResetAll`
 			if resetPhys and p and not lockTable[p] and rgm.GetPhysBoneParent(ent, p) then
-				local offset = defaultPose[p]
+				local offset = parentOffset[p]
 				local po = ent:GetPhysicsObjectNum(p)
 				local ppos, pang
 				if offset.parent then
