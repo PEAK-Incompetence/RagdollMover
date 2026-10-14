@@ -5746,7 +5746,7 @@ function TOOL:DrawHUD()
 
 	local aimedentity = plTable.AimedEntity
 	local aimedbone = IsValid(aimedentity) and (aimedentity:GetClass() == "prop_ragdoll" and plTable.AimedBone or 0) or 0
-	if XRaySelect and IsValid(aimedentity) and aimedentity ~= ent then
+	if XRaySelect and IsValid(aimedentity) and EntityFilter(aimedentity, self) and aimedentity ~= ent then
 		rgm.DrawXRayEntity(aimedentity)
 	end
 
