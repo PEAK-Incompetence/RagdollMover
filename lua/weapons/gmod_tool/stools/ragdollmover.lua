@@ -40,6 +40,7 @@ TOOL.ClientConVar["updaterate"] = 0.01
 TOOL.ClientConVar["xray"] = 0
 TOOL.ClientConVar["xray_selection"] = 0
 TOOL.ClientConVar["disablebrushfilter"] = 0
+TOOL.ClientConVar["disablemovinggizmo"] = 0
 
 TOOL.ClientConVar["rotatebutton"] = MOUSE_MIDDLE
 TOOL.ClientConVar["scalebutton"] = MOUSE_RIGHT
@@ -3076,7 +3077,8 @@ end
 
 local GizmoWidth = GetConVar("ragdollmover_width") and GetConVar("ragdollmover_width"):GetFloat()
 local SkeletonDraw = GetConVar("ragdollmover_drawskeleton") and GetConVar("ragdollmover_drawskeleton"):GetBool()
-local XRaySelect = GetConVar("ragdollmover_xray_selection") and GetConVar("ragdollmover_xray_selection") :GetBool()
+local XRaySelect = GetConVar("ragdollmover_xray_selection") and GetConVar("ragdollmover_xray_selection"):GetBool()
+local DisableMoveGizmoDraw = GetConVar("ragdollmover_disablemovinggizmo") and GetConVar("ragdollmover_disablemovinggizmo"):GetBool()
 
 hook.Add("rgmInit", "rgmSetPlayer", function()
 	pl = LocalPlayer()
@@ -3085,7 +3087,8 @@ hook.Add("rgmInit", "rgmSetPlayer", function()
 
 	GizmoWidth = GetConVar("ragdollmover_width"):GetFloat()
 	SkeletonDraw = GetConVar("ragdollmover_drawskeleton"):GetBool()
-	XRaySelect = GetConVar("ragdollmover_xray_selection") :GetBool()
+	XRaySelect = GetConVar("ragdollmover_xray_selection"):GetBool()
+	DisableMoveGizmoDraw = GetConVar("ragdollmover_disablemovinggizmo"):GetBool()
 end)
 
 local NodeFunctions
@@ -3183,6 +3186,10 @@ end)
 
 cvars.AddChangeCallback("ragdollmover_xray_selection", function(convar, old, new)
 	XRaySelect = tobool(new)
+end)
+
+cvars.AddChangeCallback("ragdollmover_disablemovinggizmo", function(convar, old, new)
+	DisableMoveGizmoDraw = tobool(new)
 end)
 
 
@@ -5058,6 +5065,8 @@ function TOOL.BuildCPanel(CPanel)
 		DisFil:SetToolTip("#tool.ragdollmover.disablefiltertip")
 		DisBruFil:SetToolTip("#tool.ragdollmover.disablebrushfiltertip")
 		CCheckBox(Col3, "#tool.ragdollmover.drawskeleton", "ragdollmover_drawskeleton")
+		local DisMoveGizmo = CCheckBox(Col3, "#tool.ragdollmover.disablemovinggizmo", "ragdollmover_disablemovinggizmo")
+		DisMoveGizmo:SetTooltip("#tool.ragdollmover.disablemovinggizmotip")
 		RGMMakeXRaySelect(Col3)
 		CNumSlider(Col3, "#tool.ragdollmover.updaterate", "ragdollmover_updaterate", 0.01, 1.0, 2)
 
@@ -5730,10 +5739,11 @@ function TOOL:DrawHUD()
 			cam.Start({type = "3D"})
 			render.SetMaterial(material)
 
-			moveaxis:DrawLines(true, axis.scale, width)
-
+			if not DisableMoveGizmoDraw then
+				moveaxis:DrawLines(true, axis.scale, width)
+			end
 			cam.End()
-
+			
 			if moveaxis.DrawText then moveaxis:DrawText(plTable, eyepos, eyeang) end
 		else
 			cam.Start({type = "3D"})
