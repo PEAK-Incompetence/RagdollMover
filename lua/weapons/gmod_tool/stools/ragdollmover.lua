@@ -65,12 +65,20 @@ local VECTOR_SCALEDEF = RGM_Constants.VECTOR_ONE
 
 local RGM_LOCKS_DUPE_KEY = "Ragdoll Mover Lock Data"
 
+local funcClasses = {
+	["func_door"] = true
+}
+
+local function CheckBrush(ent)
+	return ent:GetBrushPlaneCount() > 0 or funcClasses[ent:GetClass()]
+end
+
 local function rgmGetBone(pl, ent, bone)
 	local plTable = RAGDOLLMOVER[pl]
 	--------------------------------------------------------- yeah this part is from locrotscale
 	local phys, physobj
 	plTable.IsPhysBone = false
-	local isBrush = ent:GetBrushPlaneCount() > 0
+	local isBrush = CheckBrush(ent)
 
 	local count = ent:GetPhysicsObjectCount()
 	local isragdoll = ent:GetClass() == "prop_ragdoll"
@@ -2435,11 +2443,11 @@ local ValidEntities = {
 }
 
 local function EntityFilter(ent, tool)
-	local brushPlaneCount = ent:GetBrushPlaneCount()
+	local isBrush = CheckBrush(ent)
 	local isEntityFilterDisabled = tool:GetClientNumber("disablefilter") ~= 0
 	local isBrushFilterDisabled = tool:GetClientNumber("disablebrushfilter") ~= 0
-	local canSelectEntity = brushPlaneCount == 0 and ((ValidEntities[ent:GetClass()]) or (isEntityFilterDisabled and not ent:IsWorld()))
-	local canSelectBrush = isBrushFilterDisabled and brushPlaneCount > 0
+	local canSelectEntity = not isBrush and ((ValidEntities[ent:GetClass()]) or (isEntityFilterDisabled and not ent:IsWorld()))
+	local canSelectBrush = isBrushFilterDisabled and isBrush
 	return canSelectEntity or canSelectBrush
 end
 
@@ -4539,7 +4547,7 @@ local function RGMBuildBoneMenu(ents, selectedent, bonepanel)
 	for id, entdata in ipairs(sortedbones) do
 		local ent = entdata.ent
 		local num = ent:GetBoneCount() - 1 -- first we find all rootbones and their children
-		local isBrush = ent:GetBrushPlaneCount() > 0
+		local isBrush = CheckBrush(ent)
 		if isBrush then
 			table.insert(entdata, {id = 0, Type = BONE_PHYSICAL, depth = 1})
 		else			
@@ -4637,7 +4645,7 @@ local function UpdateBoneNodes(bonepanel, physids, isphys)
 	for id, entdata in ipairs(sortedbones) do
 		local ent = entdata.ent
 
-		local isBrush = ent:GetBrushPlaneCount() > 0
+		local isBrush = CheckBrush(ent)
 		if isBrush then
 			table.insert(entdata, {id = 0, Type = BONE_PHYSICAL, depth = 1})
 		else
