@@ -40,6 +40,7 @@ TOOL.ClientConVar["updaterate"] = 0.01
 TOOL.ClientConVar["xray"] = 0
 TOOL.ClientConVar["xray_selection"] = 0
 TOOL.ClientConVar["disablebrushfilter"] = 0
+TOOL.ClientConVar["disablemovinggizmo"] = 0
 
 TOOL.ClientConVar["rotatebutton"] = MOUSE_MIDDLE
 TOOL.ClientConVar["scalebutton"] = MOUSE_RIGHT
@@ -64,12 +65,20 @@ local VECTOR_SCALEDEF = RGM_Constants.VECTOR_ONE
 
 local RGM_LOCKS_DUPE_KEY = "Ragdoll Mover Lock Data"
 
+local funcClasses = {
+	["func_door"] = true
+}
+
+local function CheckBrush(ent)
+	return ent:GetBrushPlaneCount() > 0 or funcClasses[ent:GetClass()]
+end
+
 local function rgmGetBone(pl, ent, bone)
 	local plTable = RAGDOLLMOVER[pl]
 	--------------------------------------------------------- yeah this part is from locrotscale
 	local phys, physobj
 	plTable.IsPhysBone = false
-	local isBrush = ent:GetBrushPlaneCount() > 0
+	local isBrush = CheckBrush(ent)
 
 	local count = ent:GetPhysicsObjectCount()
 	local isragdoll = ent:GetClass() == "prop_ragdoll"
@@ -2434,11 +2443,11 @@ local ValidEntities = {
 }
 
 local function EntityFilter(ent, tool)
-	local brushPlaneCount = ent:GetBrushPlaneCount()
+	local isBrush = CheckBrush(ent)
 	local isEntityFilterDisabled = tool:GetClientNumber("disablefilter") ~= 0
 	local isBrushFilterDisabled = tool:GetClientNumber("disablebrushfilter") ~= 0
-	local canSelectEntity = brushPlaneCount == 0 and ((ValidEntities[ent:GetClass()]) or (isEntityFilterDisabled and not ent:IsWorld()))
-	local canSelectBrush = isBrushFilterDisabled and brushPlaneCount > 0
+	local canSelectEntity = not isBrush and ((ValidEntities[ent:GetClass()]) or (isEntityFilterDisabled and not ent:IsWorld()))
+	local canSelectBrush = isBrushFilterDisabled and isBrush
 	return canSelectEntity or canSelectBrush
 end
 
@@ -3076,7 +3085,8 @@ end
 
 local GizmoWidth = GetConVar("ragdollmover_width") and GetConVar("ragdollmover_width"):GetFloat()
 local SkeletonDraw = GetConVar("ragdollmover_drawskeleton") and GetConVar("ragdollmover_drawskeleton"):GetBool()
-local XRaySelect = GetConVar("ragdollmover_xray_selection") and GetConVar("ragdollmover_xray_selection") :GetBool()
+local XRaySelect = GetConVar("ragdollmover_xray_selection") and GetConVar("ragdollmover_xray_selection"):GetBool()
+local DisableMoveGizmoDraw = GetConVar("ragdollmover_disablemovinggizmo") and GetConVar("ragdollmover_disablemovinggizmo"):GetBool()
 
 hook.Add("rgmInit", "rgmSetPlayer", function()
 	pl = LocalPlayer()
@@ -3085,7 +3095,8 @@ hook.Add("rgmInit", "rgmSetPlayer", function()
 
 	GizmoWidth = GetConVar("ragdollmover_width"):GetFloat()
 	SkeletonDraw = GetConVar("ragdollmover_drawskeleton"):GetBool()
-	XRaySelect = GetConVar("ragdollmover_xray_selection") :GetBool()
+	XRaySelect = GetConVar("ragdollmover_xray_selection"):GetBool()
+	DisableMoveGizmoDraw = GetConVar("ragdollmover_disablemovinggizmo"):GetBool()
 end)
 
 local NodeFunctions
@@ -3183,6 +3194,10 @@ end)
 
 cvars.AddChangeCallback("ragdollmover_xray_selection", function(convar, old, new)
 	XRaySelect = tobool(new)
+end)
+
+cvars.AddChangeCallback("ragdollmover_disablemovinggizmo", function(convar, old, new)
+	DisableMoveGizmoDraw = tobool(new)
 end)
 
 
@@ -4532,7 +4547,7 @@ local function RGMBuildBoneMenu(ents, selectedent, bonepanel)
 	for id, entdata in ipairs(sortedbones) do
 		local ent = entdata.ent
 		local num = ent:GetBoneCount() - 1 -- first we find all rootbones and their children
-		local isBrush = ent:GetBrushPlaneCount() > 0
+		local isBrush = CheckBrush(ent)
 		if isBrush then
 			table.insert(entdata, {id = 0, Type = BONE_PHYSICAL, depth = 1})
 		else			
@@ -4630,7 +4645,7 @@ local function UpdateBoneNodes(bonepanel, physids, isphys)
 	for id, entdata in ipairs(sortedbones) do
 		local ent = entdata.ent
 
-		local isBrush = ent:GetBrushPlaneCount() > 0
+		local isBrush = CheckBrush(ent)
 		if isBrush then
 			table.insert(entdata, {id = 0, Type = BONE_PHYSICAL, depth = 1})
 		else
@@ -5058,6 +5073,8 @@ function TOOL.BuildCPanel(CPanel)
 		DisFil:SetToolTip("#tool.ragdollmover.disablefiltertip")
 		DisBruFil:SetToolTip("#tool.ragdollmover.disablebrushfiltertip")
 		CCheckBox(Col3, "#tool.ragdollmover.drawskeleton", "ragdollmover_drawskeleton")
+		local DisMoveGizmo = CCheckBox(Col3, "#tool.ragdollmover.disablemovinggizmo", "ragdollmover_disablemovinggizmo")
+		DisMoveGizmo:SetTooltip("#tool.ragdollmover.disablemovinggizmotip")
 		RGMMakeXRaySelect(Col3)
 		CNumSlider(Col3, "#tool.ragdollmover.updaterate", "ragdollmover_updaterate", 0.01, 1.0, 2)
 
@@ -5730,10 +5747,11 @@ function TOOL:DrawHUD()
 			cam.Start({type = "3D"})
 			render.SetMaterial(material)
 
-			moveaxis:DrawLines(true, axis.scale, width)
-
+			if not DisableMoveGizmoDraw then
+				moveaxis:DrawLines(true, axis.scale, width)
+			end
 			cam.End()
-
+			
 			if moveaxis.DrawText then moveaxis:DrawText(plTable, eyepos, eyeang) end
 		else
 			cam.Start({type = "3D"})
@@ -5746,7 +5764,7 @@ function TOOL:DrawHUD()
 
 	local aimedentity = plTable.AimedEntity
 	local aimedbone = IsValid(aimedentity) and (aimedentity:GetClass() == "prop_ragdoll" and plTable.AimedBone or 0) or 0
-	if XRaySelect and IsValid(aimedentity) and aimedentity ~= ent then
+	if XRaySelect and IsValid(aimedentity) and EntityFilter(aimedentity, self) and aimedentity ~= ent then
 		rgm.DrawXRayEntity(aimedentity)
 	end
 
