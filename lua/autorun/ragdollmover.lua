@@ -710,7 +710,7 @@ function SetOffsets(tool, ent, ostable, sbone, rlocks, plocks, nphysinfo)
 		end
 	end
 
-	if ent.rgmIKChains then
+	if ent.rgmIKChains and ent:GetClass() == "prop_ragdoll" then
 		for k, v in pairs(ent.rgmIKChains) do
 			if tool:GetClientNumber(DefIKnames[v.type]) ~= 0 then
 				if v.ikhipparent then

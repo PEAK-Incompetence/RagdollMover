@@ -2878,6 +2878,7 @@ if SERVER then
 
 			elseif plTable.IsPhysBone then -- moving physbones
 				local isik, iknum = rgm.IsIKBone(self, ent, bone)
+				isik = isik and ent:GetClass() == "prop_ragdoll"
 				local pos, ang = apart:ProcessMovement(plTable.rgmOffsetPos, plTable.rgmOffsetAng, eyepos, eyeang, ent, bone, plTable.rgmISPos, plTable.rgmISDir, 1, snapamount, plTable.StartAngle, nil, nil, nil, tracepos)
 
 				local physcount = ent:GetPhysicsObjectCount() - 1
