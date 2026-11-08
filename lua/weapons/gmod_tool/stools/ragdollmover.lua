@@ -1293,6 +1293,8 @@ local NETFUNC = {
 			boneid = physbone
 		elseif ent.rgmPRenttoid then
 			boneid = ent.rgmPRenttoid[ent]
+		else
+			boneid = 0
 		end
 
 		local plTable = RAGDOLLMOVER[pl]
