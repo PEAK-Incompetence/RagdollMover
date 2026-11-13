@@ -801,7 +801,9 @@ local function deserializeConstraints(entLockData, entity, newEnts)
 			if isentity(lockent) and IsValid(lockent) then
 				key = lockent:EntIndex()
 			end
-			newLockData[newEnts[key]] = {id = lockinfo.id, ent = infoent}
+			if newEnts[key] then
+				newLockData[newEnts[key]] = {id = lockinfo.id, ent = infoent}
+			end
 		end
 	end
 
